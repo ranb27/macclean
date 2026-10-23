@@ -164,6 +164,9 @@ fn scan_app_caches(home: &Path, installed: &HashSet<String>) -> (Vec<CleanTarget
                 continue;
             }
             let dir_name = e.file_name().to_string_lossy().to_string();
+            if dir_name.starts_with('.') || dir_name.starts_with("com.apple") {
+                continue; // TCC-protected — can't trash anyway
+            }
             if !is_installed(&dir_name, installed) {
                 continue; // orphans handled by leftover scanner
             }
@@ -333,8 +336,7 @@ fn collect_app_names(app: &Path, names: &mut HashSet<String>) {
 }
 
 /// A Library dir "belongs" to an installed app when normalized names
-/// overlap — either direction, requiring at least 4 chars to avoid
-/// false matches on entries like `go` or `Code`.
+/// overlap — exact match at any length, or ≥5-char containment both ways.
 fn is_installed(dir_name: &str, installed: &HashSet<String>) -> bool {
     // Check the dir name and its bundle-id segments (e.g. "com.openai.atlas").
     let mut names = vec![dir_name.to_string()];
