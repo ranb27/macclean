@@ -19,11 +19,11 @@ const DEV_CACHE_PATHS: &[(&str, &str)] = &[
     (".gradle/caches", "Gradle cache"),
     (".cargo/registry/cache", "cargo registry cache"),
     (".cargo/git", "cargo git checkouts"),
-    ("Library/Developer/Xcode/DerivedData", "Xcode build artifacts"),
     (
-        "Library/Developer/CoreSimulator/Caches",
-        "simulator caches",
+        "Library/Developer/Xcode/DerivedData",
+        "Xcode build artifacts",
     ),
+    ("Library/Developer/CoreSimulator/Caches", "simulator caches"),
     (".m2/repository", "Maven repository cache"),
     ("Library/Caches/Yarn", "Yarn cache"),
     (".yarn/cache", "Yarn cache"),
@@ -59,8 +59,16 @@ const APP_DATA_DIRS: &[&str] = &[
 
 /// Never offer these for deletion even if they look orphaned.
 const LEFTOVER_SKIP_PREFIXES: &[&str] = &[
-    "com.apple", "apple", "ns.", "group.com.apple", "icloud", "syncservices",
-    "crashreporter", "knowledge", "callservicesd", "caches",
+    "com.apple",
+    "apple",
+    "ns.",
+    "group.com.apple",
+    "icloud",
+    "syncservices",
+    "crashreporter",
+    "knowledge",
+    "callservicesd",
+    "caches",
 ];
 
 pub struct ScanResult {
@@ -87,7 +95,12 @@ pub fn scan_all() -> ScanResult {
     raise_fd_limit();
     let home = match std::env::var("HOME") {
         Ok(h) => PathBuf::from(h),
-        Err(_) => return ScanResult { targets: vec![], errors: vec!["HOME not set".into()] },
+        Err(_) => {
+            return ScanResult {
+                targets: vec![],
+                errors: vec!["HOME not set".into()],
+            };
+        }
     };
 
     let installed = installed_app_names(&home);
@@ -103,7 +116,7 @@ pub fn scan_all() -> ScanResult {
 
     targets.extend(scan_leftovers(&home, &installed));
 
-    targets.sort_by(|a, b| b.size.cmp(&a.size));
+    targets.sort_by_key(|t| std::cmp::Reverse(t.size));
     ScanResult { targets, errors }
 }
 
@@ -115,7 +128,13 @@ fn scan_devtools(home: &Path) -> Vec<CleanTarget> {
         .filter_map(|(rel, reason)| {
             let path = home.join(rel);
             path.is_dir().then(|| {
-                sized(path, Category::DevCaches, Safety::Regenerable, Action::Trash, *reason)
+                sized(
+                    path,
+                    Category::DevCaches,
+                    Safety::Regenerable,
+                    Action::Trash,
+                    *reason,
+                )
             })
         })
         .flatten()
@@ -160,7 +179,13 @@ fn scan_app_caches(home: &Path, installed: &HashSet<String>) -> (Vec<CleanTarget
     let targets = candidates
         .par_iter()
         .filter_map(|(p, r)| {
-            sized(p.clone(), Category::AppCaches, Safety::Regenerable, Action::Trash, r.clone())
+            sized(
+                p.clone(),
+                Category::AppCaches,
+                Safety::Regenerable,
+                Action::Trash,
+                r.clone(),
+            )
         })
         .collect();
     (targets, vec![])
@@ -204,8 +229,7 @@ fn scan_leftovers(home: &Path, installed: &HashSet<String>) -> Vec<CleanTarget> 
 
 fn skip_leftover_name(name: &str) -> bool {
     let lower = name.to_lowercase();
-    name.starts_with('.')
-        || LEFTOVER_SKIP_PREFIXES.iter().any(|p| lower.starts_with(p))
+    name.starts_with('.') || LEFTOVER_SKIP_PREFIXES.iter().any(|p| lower.starts_with(p))
 }
 
 // ---------- logs ----------
@@ -234,16 +258,16 @@ fn scan_logs(home: &Path) -> Vec<CleanTarget> {
         if let Ok(entries) = std::fs::read_dir(base) {
             for e in entries.flatten() {
                 let p = e.path();
-                if p.extension().is_some_and(|x| x == "log") {
-                    if let Some(t) = sized(
+                if p.extension().is_some_and(|x| x == "log")
+                    && let Some(t) = sized(
                         p,
                         Category::Logs,
                         Safety::Review,
                         Action::Truncate,
                         "service log (truncated in place)",
-                    ) {
-                        targets.push(t);
-                    }
+                    )
+                {
+                    targets.push(t);
                 }
             }
         }
@@ -281,18 +305,18 @@ fn collect_app_names(app: &Path, names: &mut HashSet<String>) {
         raw_names.push(stem.to_string_lossy().into_owned());
     }
     let plist_path = app.join("Contents/Info.plist");
-    if let Ok(value) = plist::from_file::<_, plist::Value>(&plist_path) {
-        if let Some(dict) = value.as_dictionary() {
-            for key in ["CFBundleName", "CFBundleDisplayName", "CFBundleExecutable"] {
-                if let Some(s) = dict.get(key).and_then(|v| v.as_string()) {
-                    raw_names.push(s.to_string());
-                }
+    if let Ok(value) = plist::from_file::<_, plist::Value>(&plist_path)
+        && let Some(dict) = value.as_dictionary()
+    {
+        for key in ["CFBundleName", "CFBundleDisplayName", "CFBundleExecutable"] {
+            if let Some(s) = dict.get(key).and_then(|v| v.as_string()) {
+                raw_names.push(s.to_string());
             }
-            if let Some(id) = dict.get("CFBundleIdentifier").and_then(|v| v.as_string()) {
-                if let Some(last) = id.rsplit('.').next() {
-                    raw_names.push(last.to_string());
-                }
-            }
+        }
+        if let Some(id) = dict.get("CFBundleIdentifier").and_then(|v| v.as_string())
+            && let Some(last) = id.rsplit('.').next()
+        {
+            raw_names.push(last.to_string());
         }
     }
     for raw in raw_names {
@@ -316,7 +340,10 @@ fn is_installed(dir_name: &str, installed: &HashSet<String>) -> bool {
     let mut names = vec![dir_name.to_string()];
     if dir_name.contains('.') {
         names.extend(dir_name.split('.').map(|s| s.to_string()));
-        if let Some(last) = dir_name.strip_suffix(".savedState").or(dir_name.rsplit('.').next()) {
+        if let Some(last) = dir_name
+            .strip_suffix(".savedState")
+            .or(dir_name.rsplit('.').next())
+        {
             names.push(last.to_string());
         }
     }
@@ -376,11 +403,7 @@ fn path_size(path: &Path) -> u64 {
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .map(|e| {
-            e.metadata()
-                .map(|m| m.blocks() * 512)
-                .unwrap_or(0)
-        })
+        .map(|e| e.metadata().map(|m| m.blocks() * 512).unwrap_or(0))
         .sum()
 }
 

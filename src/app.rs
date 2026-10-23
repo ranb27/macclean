@@ -1,10 +1,10 @@
-use crate::model::{fmt_size, Category, CleanTarget, Safety};
+use crate::model::{Category, CleanTarget, Safety, fmt_size};
 use crate::scan::{self, ScanResult};
 use crate::trash;
 use eframe::egui;
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::sync::mpsc::{channel, Receiver, TryRecvError};
+use std::sync::mpsc::{Receiver, TryRecvError, channel};
 use std::time::Duration;
 
 pub struct MacCleanApp {
@@ -253,35 +253,38 @@ impl eframe::App for MacCleanApp {
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
-                    egui::Grid::new("rows").num_columns(5).striped(true).show(ui, |ui| {
-                        let filter = self.category_filter;
-                        for t in self
-                            .targets
-                            .iter_mut()
-                            .filter(|t| filter.map_or(true, |c| t.category == c))
-                        {
-                            ui.checkbox(&mut t.selected, "");
-                            ui.monospace(fmt_size(t.size));
-                            match t.safety {
-                                Safety::Regenerable => {
-                                    ui.colored_label(
-                                        egui::Color32::from_rgb(0x3c, 0xc9, 0x7e),
-                                        "safe",
-                                    );
+                    egui::Grid::new("rows")
+                        .num_columns(5)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            let filter = self.category_filter;
+                            for t in self
+                                .targets
+                                .iter_mut()
+                                .filter(|t| filter.is_none_or(|c| t.category == c))
+                            {
+                                ui.checkbox(&mut t.selected, "");
+                                ui.monospace(fmt_size(t.size));
+                                match t.safety {
+                                    Safety::Regenerable => {
+                                        ui.colored_label(
+                                            egui::Color32::from_rgb(0x3c, 0xc9, 0x7e),
+                                            "safe",
+                                        );
+                                    }
+                                    Safety::Review => {
+                                        ui.colored_label(
+                                            egui::Color32::from_rgb(0xe6, 0xa2, 0x3c),
+                                            "review",
+                                        );
+                                    }
                                 }
-                                Safety::Review => {
-                                    ui.colored_label(
-                                        egui::Color32::from_rgb(0xe6, 0xa2, 0x3c),
-                                        "review",
-                                    );
-                                }
+                                let path_str = t.path.display().to_string();
+                                ui.label(&path_str).on_hover_text(path_str);
+                                ui.label(&t.reason);
+                                ui.end_row();
                             }
-                            let path_str = t.path.display().to_string();
-                            ui.label(&path_str).on_hover_text(path_str);
-                            ui.label(&t.reason);
-                            ui.end_row();
-                        }
-                    });
+                        });
                 });
         });
     }
