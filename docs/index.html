@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="macclean">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,11 +9,56 @@
   <meta property="og:description" content="A safe, fast macOS disk cleaner. Deletes through the Trash — always recoverable." />
   <meta property="og:image" content="https://ranb27.github.io/macclean/icon.png" />
   <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script>
+    // Follow the OS theme before first paint — no toggle needed.
+    (() => {
+      const mq = matchMedia("(prefers-color-scheme: dark)");
+      const apply = () => {
+        document.documentElement.dataset.theme = mq.matches ? "macclean-dark" : "macclean-light";
+      };
+      apply();
+      mq.addEventListener("change", apply);
+    })();
+  </script>
   <style>
-    /* macclean theme — palette matches the app icon */
-    [data-theme="macclean"] {
+    /* macclean themes — palette matches the app icon */
+    [data-theme="macclean-light"] {
+      color-scheme: light;
+      --color-base-100: #f4f6f9;
+      --color-base-200: #eef1f6;
+      --color-base-300: #e0e6ee;
+      --color-base-content: #1a222e;
+      --color-primary: #1fa35f;
+      --color-primary-content: #ffffff;
+      --color-secondary: #0d8fcc;
+      --color-secondary-content: #ffffff;
+      --color-accent: #a87714;
+      --color-accent-content: #ffffff;
+      --color-neutral: #54617a;
+      --color-neutral-content: #f4f6f9;
+      --color-info: #0d8fcc;
+      --color-info-content: #ffffff;
+      --color-success: #1fa35f;
+      --color-success-content: #ffffff;
+      --color-warning: #a87714;
+      --color-warning-content: #171006;
+      --color-error: #d84754;
+      --color-error-content: #300d10;
+      --radius-selector: 0.5rem;
+      --radius-field: 0.5rem;
+      --radius-box: 1rem;
+      --size-selector: 0.25rem;
+      --size-field: 0.25rem;
+      --border: 1px;
+      --depth: 1;
+      --noise: 0;
+    }
+    [data-theme="macclean-dark"] {
       color-scheme: dark;
       --color-base-100: #0d1117;
       --color-base-200: #141a24;
@@ -44,20 +89,64 @@
       --depth: 1;
       --noise: 0;
     }
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+
+    /* ambient glow blobs — tints work on both themes */
     .glow {
       background:
         radial-gradient(42rem 26rem at 18% -8%, rgba(60, 201, 126, 0.14), transparent 60%),
         radial-gradient(38rem 24rem at 85% 0%, rgba(56, 189, 248, 0.10), transparent 60%);
     }
+    .glow-soft {
+      background:
+        radial-gradient(36rem 22rem at 80% 110%, rgba(60, 201, 126, 0.08), transparent 60%);
+    }
+
+    /* glass panel used for cards/navbar over the glowing bg */
+    .glass {
+      background: color-mix(in oklab, var(--color-base-100) 62%, transparent);
+      backdrop-filter: blur(18px) saturate(1.4);
+      -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      border: 1px solid color-mix(in oklab, var(--color-base-content) 10%, transparent);
+    }
+    .glass-chip {
+      background: color-mix(in oklab, var(--color-base-100) 55%, transparent);
+      backdrop-filter: blur(14px) saturate(1.4);
+      -webkit-backdrop-filter: blur(14px) saturate(1.4);
+      border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+      box-shadow: 0 8px 32px color-mix(in oklab, var(--color-base-content) 12%, transparent);
+    }
+
+    /* scroll-reveal + float animations */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity .7s ease, transform .7s cubic-bezier(.2,.6,.2,1);
+      transition-delay: var(--reveal-delay, 0ms);
+    }
+    [data-reveal].is-visible { opacity: 1; transform: none; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-11px); }
+    }
+    .float-slow { animation: float 6s ease-in-out infinite; }
+    .float-slower { animation: float 8s ease-in-out infinite 1.2s; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      [data-reveal] { opacity: 1; transform: none; transition: none; }
+      .float-slow, .float-slower { animation: none; }
+    }
   </style>
 </head>
-<body class="min-h-screen bg-base-100 text-base-content">
+<body class="min-h-screen bg-base-100 text-base-content antialiased">
 
-  <!-- navbar -->
-  <div class="navbar mx-auto max-w-6xl px-4">
+  <!-- navbar — sticky glass -->
+  <div class="navbar glass sticky top-0 z-50 mx-auto w-full max-w-6xl rounded-b-2xl px-4">
     <div class="navbar-start">
-      <a href="#" class="flex items-center gap-2 font-semibold text-lg">
-        <img src="icon.png" alt="macclean icon" class="h-8 w-8 rounded-lg" />
+      <a href="#" class="flex items-center gap-2 font-bold text-lg">
+        <img src="icon.png" alt="macclean icon" class="h-8 w-8" />
         macclean
       </a>
     </div>
@@ -67,198 +156,277 @@
     </div>
   </div>
 
-  <!-- hero -->
-  <div class="glow">
-    <div class="hero mx-auto max-w-6xl px-4 py-16 sm:py-24">
-      <div class="hero-content flex-col lg:flex-row-reverse gap-12 p-0">
+  <!-- hero — three.js ring behind the copy -->
+  <div class="glow relative overflow-hidden">
+    <canvas id="bg3d" class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
+
+    <div class="hero relative z-10 mx-auto max-w-6xl px-4 py-20 sm:py-28">
+      <div class="hero-content flex-col items-start gap-12 p-0 lg:flex-row-reverse">
         <div class="max-w-xl">
-          <div class="badge badge-primary badge-outline mb-4">free · open source · macOS</div>
-          <h1 class="text-4xl sm:text-5xl font-bold leading-tight">
+          <div data-reveal>
+            <div class="badge badge-primary badge-outline mb-4">free · open source · macOS</div>
+          </div>
+          <h1 class="text-4xl font-extrabold leading-tight sm:text-5xl" data-reveal style="--reveal-delay:80ms">
             A disk cleaner that <span class="text-primary">can't hurt</span> your Mac.
           </h1>
-          <p class="py-6 text-lg opacity-80">
+          <p class="py-6 text-lg opacity-80" data-reveal style="--reveal-delay:160ms">
             macclean finds caches, logs, and data left behind by uninstalled
             apps — then deletes through the Trash, so every cleanup is
             undoable. Nothing is removed until you say so.
           </p>
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex flex-wrap items-center gap-3" data-reveal style="--reveal-delay:240ms">
             <a href="https://github.com/ranb27/macclean/releases/latest/download/macclean-macos-arm64.dmg"
-               class="btn btn-primary btn-lg">
+               class="btn btn-primary btn-lg shadow-lg shadow-primary/30">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg>
               Download for macOS
             </a>
             <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-lg">View on GitHub</a>
           </div>
-          <p class="mt-4 text-sm opacity-60">Apple Silicon · macOS 11+ · MIT license</p>
+          <p class="mt-4 text-sm opacity-60" data-reveal style="--reveal-delay:320ms">Apple Silicon · macOS 11+ · MIT license</p>
+        </div>
+
+        <!-- floating glass chips, Chainly-style depth cues -->
+        <div class="relative hidden w-full max-w-sm flex-1 lg:block">
+          <div class="glass-chip float-slow absolute -top-2 right-4 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:400ms">
+            <p class="text-3xl font-extrabold text-primary">18.4 GB</p>
+            <p class="text-sm opacity-70">reclaimable found</p>
+          </div>
+          <div class="glass-chip float-slower absolute top-40 left-0 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:520ms">
+            <p class="text-3xl font-extrabold text-secondary">Trash</p>
+            <p class="text-sm opacity-70">delete = always undoable</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- app preview -->
-  <div class="mx-auto max-w-5xl px-4 pb-4">
-    <div class="mockup-window border border-base-300 bg-base-200 shadow-2xl">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="screenshot-dark.png" />
-        <source media="(prefers-color-scheme: light)" srcset="screenshot-light.png" />
-        <img src="screenshot-light.png" alt="macclean — scan results with safety badges" class="block w-full" />
-      </picture>
+  <!-- app preview — real screenshot, theme-paired, tilt on hover -->
+  <div class="mx-auto max-w-5xl px-4 pb-4" data-reveal>
+    <div class="hover-3d">
+      <div class="mockup-window border border-base-300 bg-base-200/70 shadow-2xl backdrop-blur-md">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="screenshot-dark.png" />
+          <source media="(prefers-color-scheme: light)" srcset="screenshot-light.png" />
+          <img src="screenshot-light.png" alt="macclean — scan results with safety badges" class="block w-full" />
+        </picture>
+      </div>
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
     </div>
   </div>
 
   <!-- features -->
-  <div class="mx-auto max-w-6xl px-4 py-16">
-    <div class="grid gap-6 md:grid-cols-3">
-      <div class="card bg-base-200 card-border">
-        <div class="card-body">
-          <h2 class="card-title text-primary">Safe by construction</h2>
-          <p class="opacity-80">
-            Only files your tools can fully regenerate are pre-selected —
-            package caches, build artifacts, logs. Anything ambiguous is
-            shown as <span class="badge badge-warning badge-sm">review</span>
-            and stays unticked.
-          </p>
+  <div class="glow-soft">
+    <div class="mx-auto max-w-6xl px-4 py-16">
+      <div class="grid gap-6 md:grid-cols-3">
+        <div class="card glass" data-reveal>
+          <div class="card-body">
+            <h2 class="card-title">Safe by construction</h2>
+            <p class="opacity-80">
+              Only regenerable targets are pre-ticked: caches, derived data,
+              logs. Anything that needs judgement shows as
+              <span class="badge badge-warning badge-sm align-middle">review</span>
+              and stays unticked.
+            </p>
+          </div>
         </div>
-      </div>
-      <div class="card bg-base-200 card-border">
-        <div class="card-body">
-          <h2 class="card-title text-secondary">The Trash is the undo</h2>
-          <p class="opacity-80">
-            Every deletion goes through <code class="font-mono text-sm">NSFileManager</code> —
-            the same Trash Finder uses. Changed your mind? Select a file in
-            the Trash and choose <em>Put Back</em>. No <code class="font-mono text-sm">rm</code>, ever.
-          </p>
+        <div class="card glass" data-reveal style="--reveal-delay:120ms">
+          <div class="card-body">
+            <h2 class="card-title">Trash is the undo</h2>
+            <p class="opacity-80">
+              Every deletion goes through <code>NSFileManager</code> — the same
+              mechanism Finder uses. Changed your mind? Open Trash and
+              <kbd class="kbd kbd-sm">Put Back</kbd>. Live logs are truncated
+              in place, not moved.
+            </p>
+          </div>
         </div>
-      </div>
-      <div class="card bg-base-200 card-border">
-        <div class="card-body">
-          <h2 class="card-title text-accent">Finds what apps leave behind</h2>
-          <p class="opacity-80">
-            macclean reads the bundle ID of every installed app and flags
-            Library data that matches nothing — orphaned caches, containers,
-            preferences, and launch agents paid cleaners charge you for.
-          </p>
+        <div class="card glass" data-reveal style="--reveal-delay:240ms">
+          <div class="card-body">
+            <h2 class="card-title">Finds what apps forgot</h2>
+            <p class="opacity-80">
+              Orphaned LaunchAgents, preference files, and leftover directories
+              from apps you deleted months ago — matched against what's still
+              installed, so nothing you use gets flagged.
+            </p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- what it scans -->
-  <div class="mx-auto max-w-6xl px-4 pb-16">
-    <h2 class="mb-6 text-3xl font-bold">What it scans</h2>
-    <div class="overflow-x-auto rounded-box border border-base-300">
+  <div class="mx-auto max-w-4xl px-4 pb-16">
+    <h2 class="mb-6 text-2xl font-bold" data-reveal>What it scans</h2>
+    <div class="glass rounded-box overflow-x-auto" data-reveal style="--reveal-delay:120ms">
       <table class="table">
-        <thead class="bg-base-200">
-          <tr><th>Category</th><th>What's found</th><th>Safety</th></tr>
+        <thead>
+          <tr><th>Category</th><th>Examples</th><th>Default</th></tr>
         </thead>
         <tbody>
           <tr>
-            <td class="font-medium">Developer caches</td>
-            <td class="opacity-80">npm, bun, pnpm, yarn, uv, pip, Go modules, Cargo, Gradle, Maven, Deno, Xcode DerivedData</td>
+            <td class="font-semibold">Developer caches</td>
+            <td>Xcode DerivedData, npm/pip/uv caches, Rust target dirs, simulator devices</td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
           <tr>
-            <td class="font-medium">Developer data</td>
-            <td class="opacity-80">CoreSimulator devices, Xcode Archives, iOS DeviceSupport</td>
-            <td><span class="badge badge-warning badge-sm">review</span></td>
-          </tr>
-          <tr>
-            <td class="font-medium">Cleanup commands</td>
-            <td class="opacity-80"><code class="font-mono text-sm">brew cleanup -s</code>, <code class="font-mono text-sm">xcrun simctl delete unavailable</code> — the tool's own cleanup, never a file delete</td>
+            <td class="font-semibold">App caches</td>
+            <td>Spotify, Discord, Slack, Chrome cache directories</td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
           <tr>
-            <td class="font-medium">App caches</td>
-            <td class="opacity-80">~/Library/Caches and cache subdirectories of installed apps</td>
+            <td class="font-semibold">App leftovers</td>
+            <td>Application Support, Preferences, LaunchAgents of uninstalled apps</td>
+            <td><span class="badge badge-warning badge-sm">review</span></td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Downloads</td>
+            <td>.dmg / .pkg installers you've already run</td>
+            <td><span class="badge badge-warning badge-sm">review</span></td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Logs</td>
+            <td>~/Library/Logs, Homebrew logs — truncated, not moved</td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
           <tr>
-            <td class="font-medium">App leftovers</td>
-            <td class="opacity-80">Application Support, Containers, Group Containers, LaunchAgents, Preferences whose owning app is gone</td>
-            <td><span class="badge badge-warning badge-sm">review</span></td>
-          </tr>
-          <tr>
-            <td class="font-medium">Downloads</td>
-            <td class="opacity-80">.dmg / .pkg installers left in ~/Downloads</td>
-            <td><span class="badge badge-warning badge-sm">review</span></td>
-          </tr>
-          <tr>
-            <td class="font-medium">Logs</td>
-            <td class="opacity-80">~/Library/Logs and Homebrew service logs (truncated in place so daemons keep running)</td>
+            <td class="font-semibold">Commands</td>
+            <td><code>brew cleanup -s</code>, <code>xcrun simctl delete unavailable</code></td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="mt-3 text-sm opacity-60">
-      Never touched: documents, session data, cookies, IndexedDB, LocalStorage,
-      keychains, or anything under /System.
-    </p>
   </div>
 
-  <!-- install -->
-  <div class="mx-auto max-w-6xl px-4 pb-16">
-    <h2 class="mb-6 text-3xl font-bold">Install in a minute</h2>
-    <div class="card bg-base-200 card-border">
-      <div class="card-body">
-        <ul class="steps steps-vertical sm:steps-horizontal w-full">
-          <li class="step step-primary">
-            <div class="mt-2 text-left">
-              <p class="font-medium">Download</p>
-              <p class="text-sm opacity-70">grab the .dmg above</p>
-            </div>
-          </li>
-          <li class="step step-primary">
-            <div class="mt-2 text-left">
-              <p class="font-medium">Drag</p>
-              <p class="text-sm opacity-70">macclean → Applications</p>
-            </div>
-          </li>
-          <li class="step">
-            <div class="mt-2 text-left">
-              <p class="font-medium">Open once</p>
-              <p class="text-sm opacity-70">see the note below</p>
-            </div>
-          </li>
-        </ul>
-        <div class="alert alert-soft mt-6">
-          <div>
-            <p class="font-medium">Unsigned build — one extra click on first launch.</p>
-            <p class="text-sm opacity-80">
-              macclean isn't notarized by Apple, so macOS blocks the first
-              double-click. Right-click the app → <kbd class="kbd kbd-sm">Open</kbd>
-              → confirm once; it launches normally forever after. Or from a
-              terminal:
-            </p>
-            <code class="mt-2 block rounded bg-base-300 px-3 py-2 font-mono text-sm">xattr -d com.apple.quarantine /Applications/macclean.app</code>
-          </div>
+  <!-- install steps -->
+  <div class="mx-auto max-w-4xl px-4 pb-16">
+    <h2 class="mb-6 text-2xl font-bold" data-reveal>Install in 30 seconds</h2>
+    <div class="glass rounded-box p-6" data-reveal style="--reveal-delay:120ms">
+      <ul class="steps steps-vertical w-full lg:steps-horizontal">
+        <li class="step step-primary">Download the .dmg</li>
+        <li class="step step-primary">Drag macclean to Applications</li>
+        <li class="step step-primary">Right-click → Open (first launch)</li>
+        <li class="step">Press Scan</li>
+      </ul>
+      <div class="alert alert-warning mt-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <div>
+          <h3 class="font-bold">Unsigned build — Gatekeeper will warn once</h3>
+          <p class="text-sm">
+            The app isn't notarized yet. On first launch macOS says it "can't be
+            opened" — right-click the app → <strong>Open</strong> →
+            <strong>Open anyway</strong>. From then on it launches normally.
+            Source and build workflow are public on GitHub.
+          </p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- bottom CTA -->
-  <div class="mx-auto max-w-6xl px-4 pb-20 text-center">
-    <h2 class="text-3xl font-bold">See what your Mac is carrying.</h2>
-    <p class="mx-auto mt-3 max-w-xl opacity-70">
-      Free, open source, and every deletion is recoverable from the Trash.
-    </p>
-    <a href="https://github.com/ranb27/macclean/releases/latest/download/macclean-macos-arm64.dmg"
-       class="btn btn-primary btn-lg mt-6">Download macclean</a>
-  </div>
-
   <!-- footer -->
-  <footer class="footer footer-center border-t border-base-300 bg-base-200 p-8 text-sm opacity-80">
-    <div class="flex items-center gap-2">
-      <img src="icon.png" alt="" class="h-5 w-5 rounded" />
-      <span>macclean — MIT license</span>
-    </div>
-    <nav class="flex gap-4">
-      <a class="link link-hover" href="https://github.com/ranb27/macclean">GitHub</a>
-      <a class="link link-hover" href="https://github.com/ranb27/macclean/releases">Releases</a>
-      <a class="link link-hover" href="https://github.com/ranb27/macclean/issues">Issues</a>
-    </nav>
+  <footer class="footer footer-center border-t border-base-content/10 p-10 text-base-content" data-reveal>
+    <aside>
+      <img src="icon.png" alt="" class="h-10 w-10" />
+      <p class="font-bold">macclean</p>
+      <p class="opacity-60">A safe disk cleaner for macOS. MIT licensed.</p>
+      <p class="opacity-40">
+        <a class="link" href="https://github.com/ranb27/macclean">GitHub</a> ·
+        <a class="link" href="https://github.com/ranb27/macclean/releases">Releases</a>
+      </p>
+    </aside>
   </footer>
 
+  <!-- three.js hero background: point-cloud ring echoing the app icon -->
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js" } }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+
+    const canvas = document.getElementById("bg3d");
+    const dark = matchMedia("(prefers-color-scheme: dark)");
+    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    camera.position.set(0, 0, 7);
+
+    // ring of points, green -> teal across the arc (icon palette)
+    const geo = new THREE.TorusGeometry(2.35, 0.55, 40, 220);
+    const pos = geo.attributes.position;
+    const colors = new Float32Array(pos.count * 3);
+    const cA = new THREE.Color("#3cc97e"), cB = new THREE.Color("#38bdf8");
+    const tmp = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const t = (pos.getY(i) / 2.35 + 1) / 2;
+      tmp.lerpColors(cA, cB, Math.min(Math.max(t, 0), 1));
+      colors.set([tmp.r, tmp.g, tmp.b], i * 3);
+    }
+    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.045, vertexColors: true, transparent: true });
+    const ring = new THREE.Points(geo, mat);
+    ring.rotation.x = 0.55;
+    ring.position.x = 2.6;
+    scene.add(ring);
+
+    // faint scatter of distant particles for depth
+    const stars = new THREE.BufferGeometry();
+    const sp = new Float32Array(400 * 3);
+    for (let i = 0; i < sp.length; i++) sp[i] = (Math.random() - 0.5) * 16;
+    stars.setAttribute("position", new THREE.BufferAttribute(sp, 3));
+    const starsMat = new THREE.PointsMaterial({ size: 0.03, transparent: true });
+    scene.add(new THREE.Points(stars, starsMat));
+
+    let mx = 0, my = 0;
+    addEventListener("pointermove", (e) => {
+      mx = (e.clientX / innerWidth - 0.5) * 2;
+      my = (e.clientY / innerHeight - 0.5) * 2;
+    });
+
+    function applyTheme() {
+      const d = dark.matches;
+      mat.opacity = d ? 0.85 : 0.45;
+      starsMat.color = new THREE.Color(d ? "#5b6b80" : "#8a96a8");
+      starsMat.opacity = d ? 0.6 : 0.4;
+    }
+    applyTheme();
+    dark.addEventListener("change", applyTheme);
+
+    function resize() {
+      const { clientWidth: w, clientHeight: h } = canvas;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    addEventListener("resize", resize);
+    resize();
+
+    const clock = new THREE.Clock();
+    function frame() {
+      const t = clock.getElapsedTime();
+      ring.rotation.z = t * 0.12;
+      ring.rotation.x = 0.55 + my * 0.08;
+      ring.rotation.y = mx * 0.12;
+      renderer.render(scene, camera);
+      if (!reduceMotion.matches) requestAnimationFrame(frame);
+    }
+    frame();
+  </script>
+
+  <!-- scroll reveals -->
+  <script>
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-visible");
+          io.unobserve(e.target);
+        }
+      }
+    }, { threshold: 0.12 });
+    document.querySelectorAll("[data-reveal]").forEach((el) => io.observe(el));
+  </script>
 </body>
 </html>
