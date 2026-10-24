@@ -1,3 +1,4 @@
+use crate::config;
 use crate::model::{Action, Category, CleanTarget, CommandSpec, Safety};
 use rayon::prelude::*;
 use std::collections::HashSet;
@@ -171,8 +172,50 @@ pub fn scan_all() -> ScanResult {
     targets.extend(scan_preferences(&home, &installed, &leftover_names));
     targets.extend(scan_downloads(&home, &installed));
 
+    let (cfg, cfg_err) = config::load();
+    targets.retain(|t| !is_excluded(t, &home, &cfg));
+    append_custom(&cfg, &mut targets);
+    if let Some(e) = cfg_err {
+        errors.push(e);
+    }
+
     targets.sort_by_key(|t| std::cmp::Reverse(t.size));
     ScanResult { targets, errors }
+}
+
+/// A target is excluded when its path sits inside an excluded dir — or,
+/// for command targets, when a dir the command manages is excluded.
+/// Excluding `~/Library/Caches/Homebrew` therefore hides `brew cleanup -s`;
+/// excluding `~/Library/Developer/CoreSimulator` hides `simctl delete`.
+fn is_excluded(t: &CleanTarget, home: &Path, cfg: &config::Config) -> bool {
+    if cfg.excludes(&t.path) {
+        return true;
+    }
+    if let Action::Command(spec) = t.action {
+        return spec
+            .data_dirs
+            .iter()
+            .any(|d| cfg.excludes(&resolve_dir(home, d)));
+    }
+    false
+}
+
+/// `[[custom]]` entries from the config file. Exclusions still win, and a
+/// path a scanner already lists is never duplicated.
+fn append_custom(cfg: &config::Config, targets: &mut Vec<CleanTarget>) {
+    for c in &cfg.custom {
+        if cfg.excludes(&c.path) || !c.path.exists() || targets.iter().any(|t| t.path == c.path) {
+            continue;
+        }
+        targets.push(CleanTarget::new(
+            c.path.clone(),
+            path_size(&c.path),
+            Category::Custom,
+            c.safety,
+            Action::Trash,
+            c.reason.clone(),
+        ));
+    }
 }
 
 // ---------- dev caches ----------

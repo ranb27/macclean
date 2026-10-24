@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Config file at `~/Library/Application Support/macclean/config.toml`
+  (`MACCLEAN_CONFIG` to override): `exclude` hides any target under the
+  listed paths — including command targets whose managed dirs match —
+  and `[[custom]]` entries add user paths under a new **Custom**
+  category with a `safe`/`review` safety pick. Config problems surface
+  as scan errors, never abort the scan.
+
 ## [0.3.1] - 2026-10-24
 
 ### Added
