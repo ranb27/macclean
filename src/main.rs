@@ -29,15 +29,25 @@ fn main() -> eframe::Result<()> {
         return Ok(());
     }
 
+    let icon = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon-1024.png")).ok();
+    let mut viewport = eframe::egui::ViewportBuilder::default()
+        .with_inner_size([1160.0, 720.0])
+        .with_min_inner_size([940.0, 560.0])
+        .with_title("macclean");
+    if let Some(icon) = icon {
+        viewport = viewport.with_icon(std::sync::Arc::new(icon));
+    }
     let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
-            .with_inner_size([1100.0, 700.0])
-            .with_title("macclean"),
+        viewport,
         ..Default::default()
     };
     eframe::run_native(
         "macclean",
         options,
-        Box::new(|_cc| Ok(Box::new(MacCleanApp::default()))),
+        Box::new(|cc| {
+            app::apply_theme(&cc.egui_ctx);
+            app::load_fonts(&cc.egui_ctx);
+            Ok(Box::new(MacCleanApp::default()))
+        }),
     )
 }
