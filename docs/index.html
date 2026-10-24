@@ -90,18 +90,17 @@
       --noise: 0;
     }
   <style>
-    html { scroll-behavior: smooth; }
-    body { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
-
-    /* ambient glow blobs — tints work on both themes */
-    .glow {
-      background:
+    html { scroll-behavior: smooth; overflow-x: clip; }
+    body {
+      font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+      /* ambient glows live on <body> fixed — they cover the whole page
+         at every scroll position instead of ending with a section */
+      background-image:
         radial-gradient(42rem 26rem at 18% -8%, rgba(60, 201, 126, 0.14), transparent 60%),
-        radial-gradient(38rem 24rem at 85% 0%, rgba(56, 189, 248, 0.10), transparent 60%);
-    }
-    .glow-soft {
-      background:
+        radial-gradient(38rem 24rem at 85% 0%, rgba(56, 189, 248, 0.10), transparent 60%),
         radial-gradient(36rem 22rem at 80% 110%, rgba(60, 201, 126, 0.08), transparent 60%);
+      background-attachment: fixed;
+      overflow-x: clip;
     }
 
     /* glass panel used for cards/navbar over the glowing bg */
@@ -175,7 +174,7 @@
   </div>
 
   <!-- hero — three.js ring behind the copy -->
-  <div class="glow relative overflow-hidden">
+  <div class="relative overflow-hidden">
     <canvas id="bg3d" class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
 
     <div class="hero relative z-10 mx-auto max-w-6xl px-4 py-20 sm:py-28">
@@ -233,7 +232,7 @@
   </div>
 
   <!-- features -->
-  <div class="glow-soft">
+  <div>
     <div class="mx-auto max-w-6xl px-4 py-16">
       <div class="grid gap-6 md:grid-cols-3">
         <div class="card glass" data-reveal>
