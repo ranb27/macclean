@@ -8,7 +8,7 @@ cask "macclean" do
   homepage "https://ranb27.github.io/macclean"
 
   depends_on arch: :arm64
-  depends_on macos: ">= :big_sur"
+  depends_on macos: :big_sur
 
   app "macclean.app"
 
