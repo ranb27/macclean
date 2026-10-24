@@ -196,6 +196,7 @@
                class="btn btn-primary btn-lg shadow-lg shadow-primary/30">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg>
               <span data-i18n="hero.download">Download for macOS</span>
+              <span id="ver-tag" class="badge badge-sm border-base-content/30 bg-base-content/15 font-semibold">v0.2.0</span>
             </a>
             <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-lg" data-i18n="hero.github">View on GitHub</a>
           </div>
@@ -667,6 +668,14 @@
         });
       }, { threshold: 0.4 }).observe(stepsList);
     }
+
+    // live version tag — falls back to the static text if the API is unreachable
+    fetch("https://api.github.com/repos/ranb27/macclean/releases/latest")
+      .then(r => r.ok ? r.json() : null)
+      .then(j => {
+        if (j?.tag_name) document.getElementById("ver-tag").textContent = j.tag_name;
+      })
+      .catch(() => {});
   </script>
 
   <!-- scroll reveals -->
