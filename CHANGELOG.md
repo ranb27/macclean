@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `[[custom]]` entries add user paths under a new **Custom**
   category with a `safe`/`review` safety pick. Config problems surface
   as scan errors, never abort the scan.
+- `macclean --tray` — menu-bar tray mode: closing the window keeps the
+  app running; the tray menu offers **Show macclean**, **Scan now**, and
+  **Quit macclean** (a left click on the icon also reopens the window).
+- Scheduled scans — the toolbar's **Schedule** button (or
+  `macclean --schedule daily|weekly|off`) installs a LaunchAgent running
+  `macclean --scheduled-scan`. Runs are report-only: they write
+  `~/Library/Application Support/macclean/last-scan.json`, post a macOS
+  notification, and never delete; the schedule panel shows the last
+  run's summary.
 
 ## [0.3.1] - 2026-10-24
 

@@ -123,6 +123,25 @@ whitelist-by-construction — it re-scans and only acts on paths the scan
 currently reports as `safe` (regenerable). `review` targets and arbitrary
 paths are always skipped; nothing else can be deleted through MCP.
 
+## Menu bar & scheduled scans
+
+`macclean --tray` adds a menu-bar icon. Closing the window keeps macclean
+running in the tray — reopen it from the tray menu's **Show macclean**
+(or a left click on the icon), start a scan with **Scan now**, or exit
+for real with **Quit macclean**.
+
+The toolbar's **Schedule** button installs a LaunchAgent that runs
+`macclean --scheduled-scan` daily or weekly. A scheduled run is a
+report-only scan: it writes
+`~/Library/Application Support/macclean/last-scan.json`, posts a macOS
+notification, and never deletes anything — open the app to act on the
+findings. The same panel shows the last run's summary.
+
+```sh
+macclean --schedule daily    # or weekly; `off` removes the agent
+macclean --scheduled-scan    # what the LaunchAgent invokes
+```
+
 ## How it works
 
 ```
@@ -159,7 +178,7 @@ Notable implementation details:
 - [x] Simulator & Xcode device cleanup via `simctl`
 - [x] Homebrew cleanup integration
 - [x] `.app` bundle + `.dmg` distribution
-- [ ] Scheduled scan + menu-bar tray mode
+- [x] Scheduled scan + menu-bar tray mode
 - [x] Config file for custom paths / exclusions
 
 ## Contributing

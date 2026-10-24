@@ -4,7 +4,9 @@ mod connect;
 mod mcp;
 mod model;
 mod scan;
+mod schedule;
 mod trash;
+mod tray;
 
 use app::MacCleanApp;
 use model::fmt_size;
@@ -42,6 +44,46 @@ fn main() -> eframe::Result<()> {
         return Ok(());
     }
 
+    // `macclean --scheduled-scan` — what the LaunchAgent runs: scans,
+    // records the summary, posts a notification. Never deletes.
+    if std::env::args().any(|a| a == "--scheduled-scan") {
+        match schedule::run_scheduled() {
+            Ok(s) => println!("{s}"),
+            Err(e) => {
+                eprintln!("scheduled scan: {e}");
+                std::process::exit(1);
+            }
+        }
+        return Ok(());
+    }
+
+    // `macclean --schedule daily|weekly|off` — install/remove the
+    // LaunchAgent from the CLI, same as the Schedule window does in-app.
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(i) = args.iter().position(|a| a == "--schedule") {
+        let freq = match args.get(i + 1).map(String::as_str) {
+            Some("daily") => Some(schedule::Frequency::Daily),
+            Some("weekly") => Some(schedule::Frequency::Weekly),
+            Some("off") => None,
+            _ => {
+                eprintln!("usage: macclean --schedule daily|weekly|off");
+                std::process::exit(2);
+            }
+        };
+        match schedule::set(freq) {
+            Ok(m) => println!("{m}"),
+            Err(e) => {
+                eprintln!("schedule: {e}");
+                std::process::exit(1);
+            }
+        }
+        return Ok(());
+    }
+
+    // `--tray` keeps a menu-bar icon resident; closing the window then
+    // hides it instead of quitting — Quit lives on the tray menu.
+    let tray_mode = args.iter().any(|a| a == "--tray");
+
     let icon = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon-1024.png")).ok();
     let mut viewport = eframe::egui::ViewportBuilder::default()
         .with_inner_size([1160.0, 720.0])
@@ -61,7 +103,7 @@ fn main() -> eframe::Result<()> {
             egui_extras::install_image_loaders(&cc.egui_ctx);
             app::apply_theme(&cc.egui_ctx);
             app::load_fonts(&cc.egui_ctx);
-            Ok(Box::new(MacCleanApp::default()))
+            Ok(Box::new(MacCleanApp::new(tray_mode)))
         }),
     )
 }
