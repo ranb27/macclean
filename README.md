@@ -66,7 +66,14 @@ Requires macOS + a Rust toolchain (`rustup` or `brew install rust`).
 
 `macclean --mcp` runs a Model Context Protocol server over stdio, so an AI
 assistant can inspect and clean your Mac through the same safety rules the
-GUI uses. Point your MCP client at the installed app:
+GUI uses.
+
+**Easiest setup:** click **Connect AI** in the app's toolbar — it detects
+installed clients (Claude Desktop, Claude Code, Cursor, Windsurf, Codex,
+Gemini CLI, Zed) and one click merges the server into that client's config,
+or copies the snippet for everything else.
+
+Or point your MCP client at the installed app manually:
 
 ```json
 {

@@ -1,3 +1,4 @@
+use crate::connect;
 use crate::model::{Action, Category, CleanTarget, Safety, fmt_size};
 use crate::scan::{self, ScanResult};
 use crate::trash;
@@ -7,7 +8,7 @@ use egui::{
     RichText, Stroke, StrokeKind, TextStyle, vec2,
 };
 use egui_extras::{Column, TableBuilder};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, TryRecvError, channel};
 use std::time::Duration;
@@ -77,6 +78,18 @@ fn bold() -> FontFamily {
 
 /// Theme: follow macOS light/dark. egui has no real backdrop blur, so the
 /// "glass" feel comes from translucent cards over a soft gradient.
+fn copy_clipboard(text: &str) {
+    use std::io::Write;
+    if let Ok(mut child) = std::process::Command::new("pbcopy")
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        && let Some(mut w) = child.stdin.take()
+    {
+        let _ = w.write_all(text.as_bytes());
+        drop(w);
+        let _ = child.wait();
+    }
+}
 pub fn apply_theme(ctx: &egui::Context) {
     for theme in [egui::Theme::Dark, egui::Theme::Light] {
         ctx.style_mut_of(theme, |style| {
@@ -236,6 +249,8 @@ pub struct MacCleanApp {
     update_state: UpdateState,
     update_rx: Option<Receiver<Option<String>>>,
     update_started: bool,
+    show_connect: bool,
+    connect_status: HashMap<&'static str, Result<String, String>>,
 }
 
 impl Default for MacCleanApp {
@@ -252,6 +267,8 @@ impl Default for MacCleanApp {
             update_state: UpdateState::Idle,
             update_rx: None,
             update_started: false,
+            show_connect: false,
+            connect_status: HashMap::new(),
         }
     }
 }
@@ -480,6 +497,90 @@ impl MacCleanApp {
         );
     }
 
+    /// "Connect AI" window — one click per detected MCP client.
+    fn connect_window(&mut self, ctx: &egui::Context, p: &Palette) {
+        if !self.show_connect {
+            return;
+        }
+        let mut open = true;
+        egui::Window::new("Connect macclean to your AI")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0))
+            .open(&mut open)
+            .show(ctx, |ui| {
+                ui.label(
+                    RichText::new("Runs `macclean --mcp` as an MCP server — pick your assistant:")
+                        .size(12.0)
+                        .color(p.muted),
+                );
+                ui.add_space(8.0);
+                for c in connect::CLIENTS {
+                    let detected = connect::is_detected(c);
+                    ui.horizontal(|ui| {
+                        ui.add_sized(
+                            vec2(130.0, 22.0),
+                            egui::Label::new(RichText::new(c.name).size(13.0).color(p.text)),
+                        );
+                        if detected {
+                            ui.label(RichText::new("installed").size(10.5).color(p.green));
+                        } else if !matches!(c.method, connect::Method::Manual) {
+                            ui.label(RichText::new("not found").size(10.5).color(p.muted));
+                        }
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            let manual = matches!(c.method, connect::Method::Manual);
+                            let btn = ui.add_enabled(
+                                detected || manual,
+                                egui::Button::new(
+                                    RichText::new(if manual { "Copy" } else { "Connect" })
+                                        .size(11.5)
+                                        .color(if detected || manual { p.text } else { p.muted }),
+                                ),
+                            );
+                            if btn.clicked() {
+                                if manual {
+                                    copy_clipboard(&connect::snippet());
+                                    self.connect_status
+                                        .insert(c.name, Ok("snippet copied".into()));
+                                } else {
+                                    self.connect_status.insert(c.name, connect::connect(c));
+                                }
+                            }
+                        });
+                    });
+                    match self.connect_status.get(c.name) {
+                        Some(Ok(msg)) => {
+                            ui.label(
+                                RichText::new(format!("  {msg} — {}", c.note))
+                                    .size(11.0)
+                                    .color(p.green),
+                            );
+                        }
+                        Some(Err(e)) => {
+                            ui.label(RichText::new(format!("  {e}")).size(11.0).color(p.red));
+                        }
+                        None => {}
+                    }
+                    ui.add_space(2.0);
+                }
+                ui.separator();
+                ui.label(
+                    RichText::new(format!("Config snippet: {}", connect::snippet()))
+                        .size(10.5)
+                        .monospace()
+                        .color(p.muted),
+                );
+                ui.label(
+                    RichText::new(
+                        "Ollama isn't an MCP client — use it through a front-end like Open WebUI.",
+                    )
+                    .size(10.5)
+                    .color(p.muted),
+                );
+            });
+        self.show_connect &= open;
+    }
+
     /// Subtle vertical gradient behind the central content area.
     fn paint_gradient(ui: &mut egui::Ui, p: &Palette) {
         let rect = ui.max_rect();
@@ -574,6 +675,19 @@ impl eframe::App for MacCleanApp {
                                 .size(12.0),
                         );
                         ui.add_space(6.0);
+                        if ui
+                            .add(
+                                egui::Button::new(
+                                    RichText::new("Connect AI").size(11.0).color(p.teal),
+                                )
+                                .fill(p.card),
+                            )
+                            .on_hover_text("Wire macclean --mcp into your AI assistant")
+                            .clicked()
+                        {
+                            self.show_connect = true;
+                        }
+                        ui.add_space(4.0);
                         match &self.update_state {
                             UpdateState::Done(Some(v)) => {
                                 let btn = ui
@@ -792,6 +906,9 @@ impl eframe::App for MacCleanApp {
                     }
                 });
             });
+
+        // ---------- connect-AI window ----------
+        self.connect_window(ui.ctx(), p);
 
         // ---------- central target list ----------
         egui::CentralPanel::default()

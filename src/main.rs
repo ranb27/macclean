@@ -1,4 +1,5 @@
 mod app;
+mod connect;
 mod mcp;
 mod model;
 mod scan;
