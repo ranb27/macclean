@@ -69,6 +69,29 @@ cargo run --release
 
 Requires macOS + a Rust toolchain (`rustup` or `brew install rust`).
 
+## Config file
+
+Optional TOML at `~/Library/Application Support/macclean/config.toml`
+(`MACCLEAN_CONFIG` overrides the path). Add your own targets, or exclude
+anything you never want offered:
+
+```toml
+# never list these — a path or anything under it
+exclude = ["~/Library/Caches/Homebrew", "~/Downloads"]
+
+# extra targets to scan, on top of the built-in scanners
+[[custom]]
+path = "~/work/scratch"
+safety = "review"          # "safe" marks it regenerable; review is the default
+reason = "work scratch cache"
+```
+
+- Exclusions match the target's path (or any dir a cleanup command manages,
+  so `~/Library/Caches/Homebrew` also hides `brew cleanup -s`) and always
+  win over `[[custom]]` entries.
+- Custom paths show under a **Custom** category, always via Trash.
+- A config problem never aborts the scan — it shows up as a scan error.
+
 ## AI integration (MCP)
 
 `macclean --mcp` runs a Model Context Protocol server over stdio, so an AI
@@ -137,7 +160,7 @@ Notable implementation details:
 - [x] Homebrew cleanup integration
 - [x] `.app` bundle + `.dmg` distribution
 - [ ] Scheduled scan + menu-bar tray mode
-- [ ] Config file for custom paths / exclusions
+- [x] Config file for custom paths / exclusions
 
 ## Contributing
 
