@@ -610,13 +610,17 @@ impl MacCleanApp {
                             } else {
                                 ("not found", p.muted)
                             };
-                            egui::Frame::new()
-                                .fill(bc.gamma_multiply(0.12))
-                                .corner_radius(CornerRadius::same(20))
-                                .inner_margin(Margin::symmetric(9, 3))
-                                .show(ui, |ui| {
-                                    ui.label(RichText::new(badge).size(10.5).color(bc));
-                                });
+                            if wired {
+                                egui::Frame::new()
+                                    .fill(bc.gamma_multiply(0.12))
+                                    .corner_radius(CornerRadius::same(20))
+                                    .inner_margin(Margin::symmetric(9, 3))
+                                    .show(ui, |ui| {
+                                        ui.label(RichText::new(badge).size(10.5).color(bc));
+                                    });
+                            } else {
+                                ui.label(RichText::new(badge).size(10.5).color(bc));
+                            }
                             ui.add_space(12.0);
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 // chevron expand
