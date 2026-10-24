@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-24
+
+### Added
+
+- Homebrew Cask distribution: `brew install --cask ranb27/tap/macclean
+  --no-quarantine` skips the Gatekeeper warning entirely. The tap repo
+  updates itself on each release via CI when `TAP_GITHUB_TOKEN` is set.
+- Live version tag on the landing page download button (GitHub
+  releases/latest API, static fallback).
+
+### Fixed
+
+- `Cargo.toml` version bumped — the v0.3.0 dmg reported itself as
+  0.2.0, which made the in-app update check offer v0.3.0 forever.
+
+## [0.3.0] - 2026-10-24
+
 ### Added
 
 - `macclean --mcp` — Model Context Protocol server on stdio so an AI
@@ -111,6 +128,8 @@ First public release.
   containment now requires ≥5 chars on both sides
 - `com.apple.*` entries excluded from scans (TCC-protected, untrashable anyway)
 
-[Unreleased]: https://github.com/ranb27/macclean/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ranb27/macclean/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/ranb27/macclean/releases/tag/v0.3.1
+[0.3.0]: https://github.com/ranb27/macclean/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ranb27/macclean/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ranb27/macclean/releases/tag/v0.1.0

@@ -49,3 +49,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: target/dist/macclean-macos-arm64.dmg
+
+      # updates ranb27/homebrew-tap's Casks/macclean.rb when the secret exists
+      - name: Update homebrew tap
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: scripts/update_tap.sh "${{ github.ref_name }}" target/dist/macclean-macos-arm64.dmg
