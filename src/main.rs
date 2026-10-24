@@ -57,6 +57,7 @@ fn main() -> eframe::Result<()> {
         "macclean",
         options,
         Box::new(|cc| {
+            egui_extras::install_image_loaders(&cc.egui_ctx);
             app::apply_theme(&cc.egui_ctx);
             app::load_fonts(&cc.egui_ctx);
             Ok(Box::new(MacCleanApp::default()))

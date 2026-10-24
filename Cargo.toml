@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 eframe = { version = "0.37.0", features = ["default"] }
-egui_extras = "0.37.0"
+egui_extras = { version = "0.37.0", features = ["image"] }
 libc = "0.2.191"
 plist = "1.10.3"
 rayon = "1.12.0"

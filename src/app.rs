@@ -76,14 +76,27 @@ fn bold() -> FontFamily {
     FontFamily::Name("inter-bold".into())
 }
 
-/// Brand tile color + letter for each client row.
-fn brand(c: &connect::Client) -> (Color32, &'static str) {
+/// Brand tile color + embedded logo PNG for each client row.
+/// Devin's mark ships with its own dark background → drawn full-bleed.
+fn brand(c: &connect::Client) -> (Color32, Option<&'static [u8]>) {
     match c.name {
-        "Claude" => (Color32::from_rgb(0xd9, 0x77, 0x57), "C"),
-        "OpenAI Codex" => (Color32::from_rgb(0x14, 0x14, 0x18), "O"),
-        "Google Gemini" => (Color32::from_rgb(0x47, 0x96, 0xe3), "G"),
-        "Devin" => (Color32::from_rgb(0x35, 0xb3, 0xa8), "D"),
-        _ => (Color32::from_rgb(0x8a, 0x94, 0xa6), "…"),
+        "Claude" => (
+            Color32::from_rgb(0xd9, 0x77, 0x57),
+            Some(include_bytes!("../assets/logos/claude.png")),
+        ),
+        "OpenAI Codex" => (
+            Color32::from_rgb(0x14, 0x14, 0x18),
+            Some(include_bytes!("../assets/logos/openai.png")),
+        ),
+        "Google Gemini" => (
+            Color32::from_rgb(0x47, 0x96, 0xe3),
+            Some(include_bytes!("../assets/logos/gemini.png")),
+        ),
+        "Devin" => (
+            Color32::from_rgb(0x1c, 0x21, 0x2b),
+            Some(include_bytes!("../assets/logos/devin.png")),
+        ),
+        _ => (Color32::from_rgb(0x8a, 0x94, 0xa6), None),
     }
 }
 
@@ -578,21 +591,43 @@ impl MacCleanApp {
                             // brand tile + name/sub
                             let (tile, _) =
                                 ui.allocate_exact_size(vec2(34.0, 34.0), Sense::hover());
-                            let (fill, letter) = brand(c);
-                            let pr = ui.painter();
-                            pr.rect_filled(tile, 8.0, fill);
-                            pr.rect_stroke(
+                            let (fill, logo) = brand(c);
+                            ui.painter().rect_filled(tile, 8.0, fill);
+                            match logo {
+                                Some(bytes) => {
+                                    let inner = if c.name == "Devin" {
+                                        tile.shrink(2.0)
+                                    } else {
+                                        tile.shrink(6.5)
+                                    };
+                                    ui.put(
+                                        inner,
+                                        egui::Image::from_bytes(
+                                            format!("bytes://{}-logo", c.name),
+                                            bytes,
+                                        )
+                                        .corner_radius(if c.name == "Devin" {
+                                            CornerRadius::same(6)
+                                        } else {
+                                            CornerRadius::ZERO
+                                        }),
+                                    );
+                                }
+                                None => {
+                                    ui.painter().text(
+                                        tile.center(),
+                                        Align2::CENTER_CENTER,
+                                        "…",
+                                        FontId::new(13.0, bold()),
+                                        Color32::WHITE,
+                                    );
+                                }
+                            }
+                            ui.painter().rect_stroke(
                                 tile,
                                 8.0,
                                 Stroke::new(1.0, p.card_stroke),
                                 StrokeKind::Outside,
-                            );
-                            pr.text(
-                                tile.center(),
-                                Align2::CENTER_CENTER,
-                                letter,
-                                FontId::new(14.0, bold()),
-                                Color32::WHITE,
                             );
                             ui.add_space(10.0);
                             // fixed-width name/sub column → badges align across rows
