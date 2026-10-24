@@ -98,7 +98,11 @@
   <!-- app preview -->
   <div class="mx-auto max-w-5xl px-4 pb-4">
     <div class="mockup-window border border-base-300 bg-base-200 shadow-2xl">
-      <img src="screenshot.png" alt="macclean — scan results with safety badges" class="block w-full" />
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="screenshot-dark.png" />
+        <source media="(prefers-color-scheme: light)" srcset="screenshot-light.png" />
+        <img src="screenshot-light.png" alt="macclean — scan results with safety badges" class="block w-full" />
+      </picture>
     </div>
   </div>
 
