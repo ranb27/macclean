@@ -5,7 +5,7 @@ use crate::trash;
 use eframe::egui;
 use egui::{
     Align, Align2, Color32, CornerRadius, FontData, FontFamily, FontId, Layout, Margin, Pos2,
-    RichText, Stroke, StrokeKind, TextStyle, vec2,
+    RichText, Sense, Stroke, StrokeKind, TextStyle, vec2,
 };
 use egui_extras::{Column, TableBuilder};
 use std::collections::{HashMap, HashSet};
@@ -74,6 +74,17 @@ fn pal(ui: &egui::Ui) -> &'static Palette {
 
 fn bold() -> FontFamily {
     FontFamily::Name("inter-bold".into())
+}
+
+/// Brand tile color + letter for each client row.
+fn brand(c: &connect::Client) -> (Color32, &'static str) {
+    match c.name {
+        "Claude" => (Color32::from_rgb(0xd9, 0x77, 0x57), "C"),
+        "OpenAI Codex" => (Color32::from_rgb(0x14, 0x14, 0x18), "O"),
+        "Google Gemini" => (Color32::from_rgb(0x47, 0x96, 0xe3), "G"),
+        "Devin" => (Color32::from_rgb(0x35, 0xb3, 0xa8), "D"),
+        _ => (Color32::from_rgb(0x8a, 0x94, 0xa6), "…"),
+    }
 }
 
 /// Theme: follow macOS light/dark. egui has no real backdrop blur, so the
@@ -252,6 +263,7 @@ pub struct MacCleanApp {
     show_connect: bool,
     connect_status: HashMap<&'static str, Result<String, String>>,
     test_result: Option<Result<String, String>>,
+    expanded_clients: HashSet<&'static str>,
 }
 
 impl Default for MacCleanApp {
@@ -271,6 +283,7 @@ impl Default for MacCleanApp {
             show_connect: false,
             connect_status: HashMap::new(),
             test_result: None,
+            expanded_clients: HashSet::new(),
         }
     }
 }
@@ -499,116 +512,299 @@ impl MacCleanApp {
         );
     }
 
-    /// "Connect AI" window — one click per detected MCP client.
+    /// "Connect AI" modal — one click per detected MCP client.
     fn connect_window(&mut self, ctx: &egui::Context, p: &Palette) {
         if !self.show_connect {
             return;
         }
-        let mut open = true;
-        egui::Window::new("Connect macclean to your AI")
-            .collapsible(false)
-            .resizable(false)
-            .anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0))
-            .open(&mut open)
-            .show(ctx, |ui| {
-                ui.label(
-                    RichText::new("Runs `macclean --mcp` as an MCP server — pick your assistant:")
-                        .size(12.0)
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.show_connect = false;
+            return;
+        }
+        egui::Modal::new(egui::Id::unique("connect-ai")).show(ctx, |ui| {
+            ui.set_width(470.0);
+            ui.spacing_mut().item_spacing.y = 6.0;
+
+            // ---------- header ----------
+            ui.horizontal(|ui| {
+                let (tile, _) = ui.allocate_exact_size(vec2(38.0, 38.0), Sense::hover());
+                let pr = ui.painter();
+                pr.rect_filled(tile, 10.0, p.teal.gamma_multiply(0.16));
+                let c = tile.center();
+                // link glyph: two overlapping stroked circles
+                pr.circle_stroke(c - vec2(4.5, 0.0), 6.0, Stroke::new(1.8, p.teal));
+                pr.circle_stroke(c + vec2(4.5, 0.0), 6.0, Stroke::new(1.8, p.teal));
+                ui.add_space(10.0);
+                ui.vertical(|ui| {
+                    ui.label(
+                        RichText::new("Connect macclean to your AI")
+                            .family(bold())
+                            .size(16.5)
+                            .color(p.text),
+                    );
+                    ui.label(
+                        RichText::new(
+                            "Runs `macclean --mcp` as an MCP server — pick your assistant.",
+                        )
+                        .size(11.5)
                         .color(p.muted),
-                );
-                ui.add_space(8.0);
-                for c in connect::CLIENTS {
-                    let detected = connect::is_detected(c);
-                    let wired = connect::is_wired(c);
-                    ui.horizontal(|ui| {
-                        ui.add_sized(
-                            vec2(130.0, 22.0),
-                            egui::Label::new(RichText::new(c.name).size(13.0).color(p.text)),
-                        );
-                        if wired {
-                            ui.label(RichText::new("connected").size(10.5).color(p.green));
-                        } else if detected {
-                            ui.label(RichText::new("installed").size(10.5).color(p.teal));
-                        } else if !matches!(c.method, connect::Method::Manual) {
-                            ui.label(RichText::new("not found").size(10.5).color(p.muted));
-                        }
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            let manual = matches!(c.method, connect::Method::Manual);
-                            let (label, enabled, color) = if manual {
-                                ("Copy", true, p.text)
-                            } else if wired {
-                                ("Disconnect", true, p.red)
-                            } else {
-                                ("Connect", detected, if detected { p.text } else { p.muted })
-                            };
-                            let btn = ui.add_enabled(
-                                enabled,
-                                egui::Button::new(RichText::new(label).size(11.5).color(color)),
+                    );
+                });
+                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                    if ui
+                        .add(egui::Button::new(
+                            RichText::new("×").size(17.0).color(p.muted),
+                        ))
+                        .clicked()
+                    {
+                        self.show_connect = false;
+                    }
+                });
+            });
+            ui.add_space(10.0);
+
+            // ---------- client rows ----------
+            egui::Frame::new()
+                .fill(p.card)
+                .stroke(Stroke::new(1.0, p.card_stroke))
+                .corner_radius(CornerRadius::same(12))
+                .inner_margin(Margin::symmetric(12, 4))
+                .show(ui, |ui| {
+                    let n = connect::CLIENTS.len();
+                    for (i, c) in connect::CLIENTS.iter().enumerate() {
+                        let detected = connect::is_detected(c);
+                        let wired = connect::is_wired(c);
+                        ui.horizontal(|ui| {
+                            // brand tile + name/sub
+                            let (tile, _) =
+                                ui.allocate_exact_size(vec2(34.0, 34.0), Sense::hover());
+                            let (fill, letter) = brand(c);
+                            let pr = ui.painter();
+                            pr.rect_filled(tile, 8.0, fill);
+                            pr.rect_stroke(
+                                tile,
+                                8.0,
+                                Stroke::new(1.0, p.card_stroke),
+                                StrokeKind::Outside,
                             );
-                            if btn.clicked() {
-                                if manual {
-                                    copy_clipboard(&connect::snippet());
-                                    self.connect_status
-                                        .insert(c.name, Ok("snippet copied".into()));
-                                } else if wired {
-                                    self.connect_status.insert(c.name, connect::disconnect(c));
+                            pr.text(
+                                tile.center(),
+                                Align2::CENTER_CENTER,
+                                letter,
+                                FontId::new(14.0, bold()),
+                                Color32::WHITE,
+                            );
+                            ui.add_space(10.0);
+                            ui.vertical(|ui| {
+                                ui.label(RichText::new(c.name).size(13.5).color(p.text));
+                                ui.label(RichText::new(c.sub).size(10.5).color(p.muted));
+                            });
+                            ui.add_space(8.0);
+                            let (badge, bc) = if wired {
+                                ("connected", p.green)
+                            } else if detected {
+                                ("installed", p.teal)
+                            } else {
+                                ("not found", p.muted)
+                            };
+                            egui::Frame::new()
+                                .fill(bc.gamma_multiply(0.12))
+                                .corner_radius(CornerRadius::same(20))
+                                .inner_margin(Margin::symmetric(9, 3))
+                                .show(ui, |ui| {
+                                    ui.label(RichText::new(badge).size(10.5).color(bc));
+                                });
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                // chevron expand
+                                let (cr, chev) =
+                                    ui.allocate_exact_size(vec2(16.0, 16.0), Sense::click());
+                                let cx = cr.center();
+                                let up = self.expanded_clients.contains(c.name);
+                                let (a, b, d) = if up {
+                                    (
+                                        Pos2::new(cx.x - 5.0, cx.y + 2.0),
+                                        Pos2::new(cx.x, cx.y - 3.0),
+                                        Pos2::new(cx.x + 5.0, cx.y + 2.0),
+                                    )
                                 } else {
-                                    self.connect_status.insert(c.name, connect::connect(c));
+                                    (
+                                        Pos2::new(cx.x - 5.0, cx.y - 2.0),
+                                        Pos2::new(cx.x, cx.y + 3.0),
+                                        Pos2::new(cx.x + 5.0, cx.y - 2.0),
+                                    )
+                                };
+                                let cs = Stroke::new(1.5, p.muted);
+                                ui.painter().line_segment([a, b], cs);
+                                ui.painter().line_segment([b, d], cs);
+                                if chev.on_hover_cursor(egui::CursorIcon::PointingHand).clicked()
+                                    && !self.expanded_clients.insert(c.name)
+                                {
+                                    self.expanded_clients.remove(c.name);
+                                }
+                                ui.add_space(6.0);
+                                // action button
+                                let manual = matches!(c.method, connect::Method::Manual);
+                                let (label, enabled, fill, stroke, fg) = if manual {
+                                    ("Copy", true, Color32::TRANSPARENT, p.card_stroke, p.text)
+                                } else if wired {
+                                    ("Disconnect", true, p.red.gamma_multiply(0.12), p.red, p.red)
+                                } else {
+                                    ("Connect", detected, p.teal, p.teal, Color32::WHITE)
+                                };
+                                let btn = ui.add_enabled(
+                                    enabled,
+                                    egui::Button::new(RichText::new(label).size(11.5).color(fg))
+                                        .fill(fill)
+                                        .stroke(Stroke::new(1.0, stroke)),
+                                );
+                                if btn.clicked() {
+                                    if manual {
+                                        copy_clipboard(&connect::snippet());
+                                        self.connect_status
+                                            .insert(c.name, Ok("snippet copied".into()));
+                                    } else if wired {
+                                        self.connect_status
+                                            .insert(c.name, connect::disconnect(c));
+                                    } else {
+                                        self.connect_status.insert(c.name, connect::connect(c));
+                                    }
+                                }
+                            });
+                        });
+                        // expanded detail: where the wiring lands
+                        if self.expanded_clients.contains(c.name) {
+                            ui.horizontal(|ui| {
+                                ui.add_space(44.0);
+                                ui.label(
+                                    RichText::new(connect::config_hint(c))
+                                        .size(10.5)
+                                        .monospace()
+                                        .color(p.muted),
+                                );
+                            });
+                        }
+                        match self.connect_status.get(c.name) {
+                            Some(Ok(msg)) => {
+                                ui.horizontal(|ui| {
+                                    ui.add_space(44.0);
+                                    ui.label(
+                                        RichText::new(format!("{msg} — {}", c.note))
+                                            .size(10.5)
+                                            .color(p.green),
+                                    );
+                                });
+                            }
+                            Some(Err(e)) => {
+                                ui.horizontal(|ui| {
+                                    ui.add_space(44.0);
+                                    ui.label(RichText::new(e).size(10.5).color(p.red));
+                                });
+                            }
+                            None => {}
+                        }
+                        if i + 1 < n {
+                            ui.separator();
+                        }
+                    }
+                });
+            ui.add_space(10.0);
+
+            // ---------- footer ----------
+            egui::Frame::new()
+                .fill(p.card)
+                .stroke(Stroke::new(1.0, p.card_stroke))
+                .corner_radius(CornerRadius::same(12))
+                .inner_margin(Margin::symmetric(12, 10))
+                .show(ui, |ui| {
+                    // test connection row
+                    let inner = ui.horizontal(|ui| {
+                        let (ir, _) = ui.allocate_exact_size(vec2(14.0, 14.0), Sense::hover());
+                        let ic = ir.center();
+                        ui.painter().add(egui::epaint::Shape::convex_polygon(
+                            vec![
+                                Pos2::new(ic.x - 3.0, ic.y - 5.0),
+                                Pos2::new(ic.x + 5.0, ic.y),
+                                Pos2::new(ic.x - 3.0, ic.y + 5.0),
+                            ],
+                            p.teal,
+                            Stroke::NONE,
+                        ));
+                        ui.add_space(4.0);
+                        ui.label(
+                            RichText::new("Test connection")
+                                .size(12.5)
+                                .color(p.teal),
+                        );
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            match &self.test_result {
+                                Some(Ok(msg)) => {
+                                    ui.label(RichText::new(msg).size(10.5).color(p.green));
+                                }
+                                Some(Err(e)) => {
+                                    ui.label(RichText::new(e).size(10.5).color(p.red));
+                                }
+                                None => {
+                                    ui.label(
+                                        RichText::new("runs the MCP handshake")
+                                            .size(10.5)
+                                            .color(p.muted),
+                                    );
                                 }
                             }
                         });
                     });
-                    match self.connect_status.get(c.name) {
-                        Some(Ok(msg)) => {
-                            ui.label(
-                                RichText::new(format!("  {msg} — {}", c.note))
-                                    .size(11.0)
-                                    .color(p.green),
-                            );
-                        }
-                        Some(Err(e)) => {
-                            ui.label(RichText::new(format!("  {e}")).size(11.0).color(p.red));
-                        }
-                        None => {}
-                    }
-                    ui.add_space(2.0);
-                }
-                ui.separator();
-                ui.horizontal(|ui| {
                     if ui
-                        .add(egui::Button::new(
-                            RichText::new("Test connection").size(11.5).color(p.text),
-                        ))
+                        .interact(inner.response.rect, ui.scope_id().with("test"), Sense::click())
+                        .on_hover_cursor(egui::CursorIcon::PointingHand)
                         .on_hover_text("Spawn `macclean --mcp` and run the MCP handshake")
                         .clicked()
                     {
                         self.test_result = Some(connect::test_server());
                     }
-                    match &self.test_result {
-                        Some(Ok(msg)) => {
-                            ui.label(RichText::new(msg).size(11.0).color(p.green));
-                        }
-                        Some(Err(e)) => {
-                            ui.label(RichText::new(e).size(11.0).color(p.red));
-                        }
-                        None => {}
-                    }
-                });
-                ui.label(
-                    RichText::new(format!("Config snippet: {}", connect::snippet()))
+                    ui.add_space(6.0);
+                    ui.separator();
+                    ui.add_space(6.0);
+                    // snippet block
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("Config snippet").size(11.0).color(p.muted));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if ui
+                                .add(egui::Button::new(
+                                    RichText::new("Copy").size(10.5).color(p.text),
+                                ))
+                                .clicked()
+                            {
+                                copy_clipboard(&connect::snippet());
+                                self.test_result =
+                                    Some(Ok("snippet copied to clipboard".into()));
+                            }
+                        });
+                    });
+                    egui::Frame::new()
+                        .fill(p.bg)
+                        .corner_radius(CornerRadius::same(8))
+                        .inner_margin(Margin::symmetric(10, 8))
+                        .show(ui, |ui| {
+                            ui.label(
+                                RichText::new(format!(
+                                    "{{\"mcpServers\": {{\n  \"macclean\": {{\n    \"command\": \"{}\",\n    \"args\": [\"--mcp\"]\n  }}\n}}}}",
+                                    connect::exe_path()
+                                ))
+                                .size(10.5)
+                                .monospace()
+                                .color(p.teal),
+                            );
+                        });
+                    ui.add_space(6.0);
+                    ui.label(
+                        RichText::new(
+                            "ⓘ  Ollama isn't an MCP client — use it through a front-end like Open WebUI.",
+                        )
                         .size(10.5)
-                        .monospace()
                         .color(p.muted),
-                );
-                ui.label(
-                    RichText::new(
-                        "Ollama isn't an MCP client — use it through a front-end like Open WebUI.",
-                    )
-                    .size(10.5)
-                    .color(p.muted),
-                );
-            });
-        self.show_connect &= open;
+                    );
+                });
+        });
     }
 
     /// Subtle vertical gradient behind the central content area.

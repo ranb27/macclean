@@ -28,6 +28,8 @@ pub enum Method {
 
 pub struct Client {
     pub name: &'static str,
+    /// Secondary line under the name in the Connect AI window.
+    pub sub: &'static str,
     pub detect: Detect,
     pub method: Method,
     /// Shown after a successful connect — usually "restart the app".
@@ -38,6 +40,7 @@ pub struct Client {
 pub const CLIENTS: &[Client] = &[
     Client {
         name: "Claude",
+        sub: "Anthropic — Desktop app & Code CLI",
         detect: Detect {
             dirs: &["Library/Application Support/Claude"],
             bins: &["claude"],
@@ -47,6 +50,7 @@ pub const CLIENTS: &[Client] = &[
     },
     Client {
         name: "OpenAI Codex",
+        sub: "OpenAI — Codex CLI",
         detect: Detect {
             dirs: &[".codex"],
             bins: &["codex"],
@@ -56,6 +60,7 @@ pub const CLIENTS: &[Client] = &[
     },
     Client {
         name: "Google Gemini",
+        sub: "Google — Gemini CLI",
         detect: Detect {
             dirs: &[".gemini"],
             bins: &["gemini"],
@@ -65,6 +70,7 @@ pub const CLIENTS: &[Client] = &[
     },
     Client {
         name: "Devin",
+        sub: "Cognition — org settings",
         detect: Detect {
             dirs: &[".config/devin"],
             bins: &[],
@@ -74,6 +80,7 @@ pub const CLIENTS: &[Client] = &[
     },
     Client {
         name: "Other MCP client",
+        sub: "Custom MCP clients",
         detect: Detect {
             dirs: &[],
             bins: &[],
@@ -104,6 +111,15 @@ pub fn snippet() -> String {
         "\"macclean\": {{\"command\": \"{}\", \"args\": [\"--mcp\"]}}",
         exe_path()
     )
+}
+
+/// Where the wiring lands — shown in the expanded row.
+pub fn config_hint(c: &Client) -> String {
+    match &c.method {
+        Method::McpJson(rel) | Method::CodexToml(rel) => format!("~/{rel}"),
+        Method::Claude => "~/Library/…/claude_desktop_config.json + `claude mcp add`".into(),
+        Method::Manual => "paste the snippet into your client's config".into(),
+    }
 }
 
 /// Installed on this machine?
