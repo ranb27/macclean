@@ -1,4 +1,5 @@
 mod app;
+mod mcp;
 mod model;
 mod scan;
 mod trash;
@@ -26,6 +27,16 @@ fn main() -> eframe::Result<()> {
             );
         }
         eprintln!("{} targets, {} errors", r.targets.len(), r.errors.len());
+        return Ok(());
+    }
+
+    // `macclean --mcp` — MCP server on stdio. Lets the user's AI client
+    // scan/clean via tools; clean is gated to regenerable targets only.
+    if std::env::args().any(|a| a == "--mcp") {
+        if let Err(e) = mcp::run() {
+            eprintln!("mcp server: {e}");
+            std::process::exit(1);
+        }
         return Ok(());
     }
 

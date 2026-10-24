@@ -62,6 +62,28 @@ cargo run --release
 
 Requires macOS + a Rust toolchain (`rustup` or `brew install rust`).
 
+## AI integration (MCP)
+
+`macclean --mcp` runs a Model Context Protocol server over stdio, so an AI
+assistant can inspect and clean your Mac through the same safety rules the
+GUI uses. Point your MCP client at the installed app:
+
+```json
+{
+  "mcpServers": {
+    "macclean": {
+      "command": "/Applications/macclean.app/Contents/MacOS/macclean",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+Tools: `disk_summary`, `scan_targets`, `clean_targets`. The clean tool is
+whitelist-by-construction — it re-scans and only acts on paths the scan
+currently reports as `safe` (regenerable). `review` targets and arbitrary
+paths are always skipped; nothing else can be deleted through MCP.
+
 ## How it works
 
 ```

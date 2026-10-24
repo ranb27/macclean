@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `macclean --mcp` — Model Context Protocol server on stdio so an AI
+  assistant can inspect/clean the Mac: `disk_summary`, `scan_targets`,
+  `clean_targets`. Cleaning is gated to targets a fresh scan reports as
+  regenerable — review-level and arbitrary paths are always skipped.
+- System-following dark/light theme, embedded Inter font, reclaimable
+  ring, background update check (top-right), centered scan spinner.
+- Landing page rework: dual themes via `prefers-color-scheme`,
+  glassmorphism, three.js hero, scroll reveals, EN/TH/ZH/JA picker,
+  theme-paired screenshots.
+
+### Fixed
+
+- Translucent panel tints rendered opaque white in dark mode — `Color32`
+  stores premultiplied alpha, invalid `from_rgba_premultiplied` input.
+- App icon drawn full-bleed — now on Apple's ~824 px icon grid.
+
 ## [0.2.0] - 2026-10-24
 
 ### Added
