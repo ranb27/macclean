@@ -133,6 +133,10 @@
     }
     .float-slow { animation: float 6s ease-in-out infinite; }
     .float-slower { animation: float 8s ease-in-out infinite 1.2s; }
+    /* steps cascade — colors transition as .step-primary is added per item */
+    .steps .step::before, .steps .step::after {
+      transition: background-color .45s ease, color .45s ease, box-shadow .45s ease;
+    }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       [data-reveal] { opacity: 1; transform: none; transition: none; }
@@ -142,30 +146,31 @@
 </head>
 <body class="min-h-screen bg-base-100 text-base-content antialiased">
 
-  <!-- navbar — sticky glass -->
-  <div class="navbar glass sticky top-0 z-50 mx-auto w-full max-w-6xl rounded-b-2xl px-4">
-    <div class="navbar-start">
-      <a href="#" class="flex items-center gap-2 font-bold text-lg">
-        <img src="icon.png" alt="macclean icon" class="h-8 w-8" />
-        macclean
-      </a>
-    </div>
-    <div class="navbar-end gap-2">
-      <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-1.5">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M3.5 9h17M3.5 15h17M12 3c2.5 2.6 3.9 5.7 3.9 9S14.5 18.4 12 21c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z"/></svg>
-          <span id="lang-label">EN</span>
-        </div>
-        <ul tabindex="-1" class="dropdown-content menu glass rounded-box z-50 w-36 p-2 shadow-lg">
-          <li><a data-lang="en">English</a></li>
-          <li><a data-lang="th">ไทย</a></li>
-          <li><a data-lang="zh">中文</a></li>
-          <li><a data-lang="ja">日本語</a></li>
-          <li><a data-lang="de">Deutsch</a></li>
-        </ul>
+  <!-- navbar — full-width sticky glass bar, content constrained inside -->
+  <div class="glass sticky top-0 z-50 w-full">
+    <div class="navbar mx-auto max-w-6xl px-4">
+      <div class="navbar-start">
+        <a href="#" class="flex items-center gap-2 font-bold text-lg">
+          <img src="icon.png" alt="macclean icon" class="h-8 w-8" />
+          macclean
+        </a>
       </div>
-      <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-sm" data-i18n="nav.github">GitHub</a>
-      <a href="https://github.com/ranb27/macclean/releases" class="btn btn-ghost btn-sm" data-i18n="nav.releases">Releases</a>
+      <div class="navbar-end gap-2">
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M3.5 9h17M3.5 15h17M12 3c2.5 2.6 3.9 5.7 3.9 9S14.5 18.4 12 21c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z"/></svg>
+            <span id="lang-label">EN</span>
+          </div>
+          <ul tabindex="-1" class="dropdown-content menu glass rounded-box z-50 w-36 p-2 shadow-lg">
+            <li><a data-lang="en">English</a></li>
+            <li><a data-lang="th">ไทย</a></li>
+            <li><a data-lang="zh">中文</a></li>
+            <li><a data-lang="ja">日本語</a></li>
+          </ul>
+        </div>
+        <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-sm" data-i18n="nav.github">GitHub</a>
+        <a href="https://github.com/ranb27/macclean/releases" class="btn btn-ghost btn-sm" data-i18n="nav.releases">Releases</a>
+      </div>
     </div>
   </div>
 
@@ -198,13 +203,13 @@
           <p class="mt-4 text-sm opacity-60" data-reveal style="--reveal-delay:320ms" data-i18n="hero.specs">Apple Silicon · macOS 11+ · MIT license</p>
         </div>
 
-        <!-- floating glass chips, Chainly-style depth cues -->
-        <div class="relative hidden w-full max-w-sm flex-1 lg:block">
-          <div class="glass-chip float-slow absolute -top-2 right-4 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:400ms">
+        <!-- floating glass chips — in-flow column, can never cover the copy -->
+        <div class="pointer-events-none hidden flex-1 flex-col items-end gap-10 lg:flex">
+          <div class="glass-chip float-slow translate-x-8 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:400ms">
             <p class="text-3xl font-extrabold text-primary">18.4 GB</p>
             <p class="text-sm opacity-70" data-i18n="chip.reclaim">reclaimable found</p>
           </div>
-          <div class="glass-chip float-slower absolute top-40 left-0 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:520ms">
+          <div class="glass-chip float-slower -translate-x-4 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:520ms">
             <p class="text-3xl font-extrabold text-secondary">Trash</p>
             <p class="text-sm opacity-70" data-i18n="chip.trash">delete = always undoable</p>
           </div>
@@ -316,9 +321,9 @@
     <h2 class="mb-6 text-2xl font-bold" data-reveal data-i18n="install.heading">Install in 30 seconds</h2>
     <div class="glass rounded-box p-6" data-reveal style="--reveal-delay:120ms">
       <ul class="steps steps-vertical w-full lg:steps-horizontal">
-        <li class="step step-primary" data-i18n="step.dl">Download the .dmg</li>
-        <li class="step step-primary" data-i18n="step.drag">Drag macclean to Applications</li>
-        <li class="step step-primary" data-i18n="step.open">Right-click → Open (first launch)</li>
+        <li class="step" data-i18n="step.dl">Download the .dmg</li>
+        <li class="step" data-i18n="step.drag">Drag macclean to Applications</li>
+        <li class="step" data-i18n="step.open">Right-click → Open (first launch)</li>
         <li class="step" data-i18n="step.scan">Press Scan</li>
       </ul>
       <div class="alert alert-warning mt-6">
@@ -614,13 +619,14 @@
       },
     };
 
-    const LANG_LABEL = { en: "EN", th: "TH", zh: "ZH", ja: "JA", de: "DE" };
+    const LANG_LABEL = { en: "EN", th: "TH", zh: "ZH", ja: "JA" };
     const stored = localStorage.getItem("macclean-lang");
     const browser = (navigator.language || "en").slice(0, 2).toLowerCase();
     let lang = stored || (LANG_LABEL[browser] ? browser : "en");
 
     function applyLang(code) {
-      const dict = I18N[code] || I18N.en;
+      if (!I18N[code]) code = "en";
+      const dict = I18N[code];
       lang = code;
       localStorage.setItem("macclean-lang", code);
       document.documentElement.lang = code;
@@ -647,6 +653,21 @@
       });
     });
     applyLang(lang);
+
+    // install steps light up one by one once they scroll into view
+    const stepsList = document.querySelector(".steps");
+    if (stepsList) {
+      const items = [...stepsList.querySelectorAll(".step")];
+      new IntersectionObserver((es, obs) => {
+        if (!es[0].isIntersecting) return;
+        obs.disconnect();
+        items.forEach((li, i) => {
+          if (i < items.length - 1) {
+            setTimeout(() => li.classList.add("step-primary"), 450 * (i + 1));
+          }
+        });
+      }, { threshold: 0.4 }).observe(stepsList);
+    }
   </script>
 
   <!-- scroll reveals -->
