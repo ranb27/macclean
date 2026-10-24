@@ -1,7 +1,9 @@
 use crate::connect;
 use crate::model::{Action, Category, CleanTarget, Safety, fmt_size};
 use crate::scan::{self, ScanResult};
+use crate::schedule;
 use crate::trash;
+use crate::tray;
 use eframe::egui;
 use egui::{
     Align, Align2, Color32, CornerRadius, FontData, FontFamily, FontId, Layout, Margin, Pos2,
@@ -277,10 +279,18 @@ pub struct MacCleanApp {
     connect_status: HashMap<&'static str, Result<String, String>>,
     test_result: Option<Result<String, String>>,
     expanded_clients: HashSet<&'static str>,
+    tray_enabled: bool,
+    tray: Option<tray::Tray>,
+    /// Set once tray install failed — don't retry (and re-report) every frame.
+    tray_failed: bool,
+    /// Tray-menu Quit — close requests hide to the tray unless this is set.
+    quitting: bool,
+    show_schedule: bool,
+    schedule_status: Option<Result<String, String>>,
 }
 
-impl Default for MacCleanApp {
-    fn default() -> Self {
+impl MacCleanApp {
+    pub fn new(tray_enabled: bool) -> Self {
         Self {
             targets: Vec::new(),
             scanning: false,
@@ -297,6 +307,12 @@ impl Default for MacCleanApp {
             connect_status: HashMap::new(),
             test_result: None,
             expanded_clients: HashSet::new(),
+            tray_enabled,
+            tray: None,
+            tray_failed: false,
+            quitting: false,
+            show_schedule: false,
+            schedule_status: None,
         }
     }
 }
@@ -872,10 +888,206 @@ impl MacCleanApp {
         };
         ui.painter().add(egui::Shape::mesh(mesh));
     }
+
+    /// "Scheduled scans" modal — installs/removes the LaunchAgent.
+    fn schedule_window(&mut self, ctx: &egui::Context, p: &Palette) {
+        if !self.show_schedule {
+            return;
+        }
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.show_schedule = false;
+            return;
+        }
+        egui::Modal::new(egui::Id::unique("schedule")).show(ctx, |ui| {
+            ui.set_width(430.0);
+            ui.spacing_mut().item_spacing.y = 6.0;
+
+            // ---------- header ----------
+            ui.horizontal(|ui| {
+                let (tile, _) = ui.allocate_exact_size(vec2(38.0, 38.0), Sense::hover());
+                let pr = ui.painter();
+                pr.rect_filled(tile, 10.0, p.teal.gamma_multiply(0.16));
+                let c = tile.center();
+                // clock glyph: ring + two hands
+                pr.circle_stroke(c, 10.0, Stroke::new(1.8, p.teal));
+                pr.line_segment([c, c + vec2(0.0, -6.0)], Stroke::new(1.8, p.teal));
+                pr.line_segment([c, c + vec2(4.5, 0.0)], Stroke::new(1.8, p.teal));
+                ui.add_space(10.0);
+                ui.vertical(|ui| {
+                    ui.label(
+                        RichText::new("Scheduled scans")
+                            .family(bold())
+                            .size(16.5)
+                            .color(p.text),
+                    );
+                    ui.label(
+                        RichText::new(
+                            "A LaunchAgent runs `macclean --scheduled-scan` — reports only, never deletes.",
+                        )
+                        .size(11.5)
+                        .color(p.muted),
+                    );
+                });
+                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                    if ui
+                        .add(egui::Button::new(
+                            RichText::new("×").size(17.0).color(p.muted),
+                        ))
+                        .clicked()
+                    {
+                        self.show_schedule = false;
+                    }
+                });
+            });
+            ui.add_space(10.0);
+
+            // ---------- frequency picker ----------
+            egui::Frame::new()
+                .fill(p.card)
+                .stroke(Stroke::new(1.0, p.card_stroke))
+                .corner_radius(CornerRadius::same(12))
+                .inner_margin(Margin::symmetric(12, 10))
+                .show(ui, |ui| {
+                    let current = schedule::current();
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("Frequency").size(12.5).color(p.text));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.label(
+                                RichText::new(match current {
+                                    Some(f) => f.label().to_string(),
+                                    None => "off".to_string(),
+                                })
+                                .size(11.0)
+                                .color(if current.is_some() { p.green } else { p.muted }),
+                            );
+                        });
+                    });
+                    ui.add_space(8.0);
+                    ui.horizontal(|ui| {
+                        for (label, freq) in [
+                            ("Off", None),
+                            ("Daily", Some(schedule::Frequency::Daily)),
+                            ("Weekly", Some(schedule::Frequency::Weekly)),
+                        ] {
+                            let active = current == freq;
+                            let btn = egui::Button::new(
+                                RichText::new(label)
+                                    .size(11.5)
+                                    .color(if active { p.green } else { p.text }),
+                            )
+                            .fill(if active {
+                                p.green.gamma_multiply(0.12)
+                            } else {
+                                Color32::TRANSPARENT
+                            })
+                            .stroke(Stroke::new(
+                                1.0,
+                                if active { p.green } else { p.card_stroke },
+                            ));
+                            if ui.add(btn).clicked() {
+                                self.schedule_status = Some(schedule::set(freq));
+                            }
+                        }
+                    });
+                    match &self.schedule_status {
+                        Some(Ok(msg)) => {
+                            ui.add_space(6.0);
+                            ui.label(RichText::new(msg).size(10.5).color(p.green));
+                        }
+                        Some(Err(e)) => {
+                            ui.add_space(6.0);
+                            ui.label(RichText::new(e).size(10.5).color(p.red));
+                        }
+                        None => {}
+                    }
+                });
+            ui.add_space(10.0);
+
+            // ---------- status footer ----------
+            egui::Frame::new()
+                .fill(p.card)
+                .stroke(Stroke::new(1.0, p.card_stroke))
+                .corner_radius(CornerRadius::same(12))
+                .inner_margin(Margin::symmetric(12, 10))
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("Last scan").size(11.0).color(p.muted));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.label(
+                                RichText::new(
+                                    schedule::last_scan()
+                                        .unwrap_or_else(|| "never ran".into()),
+                                )
+                                .size(10.5)
+                                .monospace()
+                                .color(p.text),
+                            );
+                        });
+                    });
+                    ui.add_space(6.0);
+                    ui.label(
+                        RichText::new(
+                            "ⓘ  Installed as ~/Library/LaunchAgents/com.macclean.scan.plist —\
+                             runs even while macclean is closed. Pair with `macclean --tray`\
+                             for a menu-bar resident icon.",
+                        )
+                        .size(10.5)
+                        .color(p.muted),
+                    );
+                });
+        });
+    }
+
+    /// Tray lifecycle: install once (main thread), poll menu events,
+    /// intercept close-to-tray. Menu clicks don't wake winit, so while a
+    /// tray exists we repaint on a heartbeat.
+    fn drive_tray(&mut self, ctx: &egui::Context) {
+        if self.tray_enabled && self.tray.is_none() && !self.tray_failed {
+            match tray::install() {
+                Ok(t) => self.tray = Some(t),
+                Err(e) => {
+                    self.errors.push(format!("menu-bar icon: {e}"));
+                    self.tray_failed = true;
+                }
+            }
+        }
+        let Some(t) = &self.tray else { return };
+        for cmd in t.poll() {
+            match cmd {
+                tray::Command::Scan => {
+                    if !self.scanning {
+                        self.start_scan();
+                    }
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+                }
+                tray::Command::Show => {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+                }
+                tray::Command::Quit => {
+                    self.quitting = true;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+            }
+        }
+        // Keep ui() ticking while the window is hidden — menu clicks don't
+        // wake winit, and a hidden window gets no redraws unless we ask.
+        ctx.send_viewport_cmd(egui::ViewportCommand::RequestPaintWhileHidden);
+        ctx.request_repaint_after(Duration::from_millis(250));
+
+        // Closing hides to the tray — Quit is only on the tray menu.
+        if !self.quitting && ctx.input(|i| i.viewport().close_requested()) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+            self.status = "Running in the menu bar — Quit from the tray menu".into();
+        }
+    }
 }
 
 impl eframe::App for MacCleanApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        self.drive_tray(ui.ctx());
         self.poll_scan();
         self.poll_delete();
         self.poll_update();
@@ -945,6 +1157,20 @@ impl eframe::App for MacCleanApp {
                             .clicked()
                         {
                             self.show_connect = true;
+                        }
+                        ui.add_space(4.0);
+                        if ui
+                            .add(
+                                egui::Button::new(
+                                    RichText::new("Schedule").size(11.0).color(p.muted),
+                                )
+                                .fill(p.card),
+                            )
+                            .on_hover_text("Run scans on a timer via a LaunchAgent")
+                            .clicked()
+                        {
+                            self.show_schedule = true;
+                            self.schedule_status = None;
                         }
                         ui.add_space(4.0);
                         match &self.update_state {
@@ -1166,8 +1392,9 @@ impl eframe::App for MacCleanApp {
                 });
             });
 
-        // ---------- connect-AI window ----------
+        // ---------- connect-AI + schedule windows ----------
         self.connect_window(ui.ctx(), p);
+        self.schedule_window(ui.ctx(), p);
 
         // ---------- central target list ----------
         egui::CentralPanel::default()
