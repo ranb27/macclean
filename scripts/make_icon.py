@@ -14,6 +14,9 @@ import zlib
 from pathlib import Path
 
 S = 1024
+# Apple's icon grid: the rounded square spans ~824 px of the 1024 canvas,
+# the rest is transparent margin. Full-bleed renders oversized in the Dock.
+SHAPE = 824
 OUT = Path(__file__).resolve().parent.parent / "assets" / "icon-1024.png"
 
 # --- palette ----------------------------------------------------------------
@@ -61,10 +64,10 @@ def render():
     img = bytearray(S * S * 4)
     AA = 1.4
     cx = cy = S / 2
-    hw = hh = S / 2 - 1  # edge padding handled by AA
-    corner = S * 0.222   # close to Apple's continuous-corner shape
+    hw = hh = SHAPE / 2
+    corner = SHAPE * 0.222  # close to Apple's continuous-corner shape
 
-    R, TH = S * 0.30, S * 0.075       # ring radius / half-thickness
+    R, TH = SHAPE * 0.30, SHAPE * 0.075  # ring radius / half-thickness
     A0, A1 = 105.0, 350.0             # open ring: gap bottom-left-ish
     DOT_ANG = math.radians(A1)        # sweeper dot sits at the gap end
     dot_r = TH * 1.35
@@ -80,7 +83,7 @@ def render():
             a_bg = smoothstep(AA / 2, -AA / 2, d)
             if a_bg <= 0:
                 continue
-            bg = lerp(BG_TOP, BG_BOT, y / S)
+            bg = lerp(BG_TOP, BG_BOT, min(max((y - (S - SHAPE) / 2) / SHAPE, 0), 1))
 
             # ring, green -> teal along its vertical extent
             dr = sdf_arc(x, y, cx, cy, R, TH, A0, A1)
