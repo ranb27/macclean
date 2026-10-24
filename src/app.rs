@@ -42,9 +42,9 @@ const DARK: Palette = Palette {
     amber: Color32::from_rgb(0xe6, 0xa2, 0x3c),
     red: Color32::from_rgb(0xef, 0x5f, 0x6b),
     btn_text: Color32::from_rgb(0x0a, 0x14, 0x0e),
-    card: Color32::from_rgba_premultiplied(255, 255, 255, 11),
-    card_stroke: Color32::from_rgba_premultiplied(255, 255, 255, 20),
-    hover: Color32::from_rgba_premultiplied(255, 255, 255, 23),
+    card: Color32::from_rgba_unmultiplied_const(255, 255, 255, 14),
+    card_stroke: Color32::from_rgba_unmultiplied_const(255, 255, 255, 30),
+    hover: Color32::from_rgba_unmultiplied_const(255, 255, 255, 32),
 };
 
 const LIGHT: Palette = Palette {
@@ -58,9 +58,9 @@ const LIGHT: Palette = Palette {
     amber: Color32::from_rgb(0xa8, 0x77, 0x14),
     red: Color32::from_rgb(0xd8, 0x47, 0x54),
     btn_text: Color32::from_rgb(0xff, 0xff, 0xff),
-    card: Color32::from_rgba_premultiplied(255, 255, 255, 165),
-    card_stroke: Color32::from_rgba_premultiplied(0, 0, 0, 18),
-    hover: Color32::from_rgba_premultiplied(0, 0, 0, 8),
+    card: Color32::from_rgba_unmultiplied_const(255, 255, 255, 200),
+    card_stroke: Color32::from_rgba_unmultiplied_const(0, 0, 0, 20),
+    hover: Color32::from_rgba_unmultiplied_const(0, 0, 0, 10),
 };
 
 fn pal(ui: &egui::Ui) -> &'static Palette {
