@@ -49,11 +49,11 @@ the same orphans CleanMyMac charges you to find.
 [macclean-macos-arm64.dmg](https://github.com/ranb27/macclean/releases/latest/download/macclean-macos-arm64.dmg),
 open it, drag `macclean` to Applications.
 
-**Or via Homebrew** — `--no-quarantine` skips the Gatekeeper warning
-entirely:
+**Or via Homebrew** — the cask strips quarantine on install, so it opens
+with no warning at all:
 
 ```sh
-brew install --cask ranb27/tap/macclean --no-quarantine
+brew install --cask ranb27/tap/macclean
 ```
 
 Unsigned — the first dmg-based launch needs right-click → **Open** (once),

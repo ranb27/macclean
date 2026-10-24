@@ -36,10 +36,16 @@ cask "macclean" do
 
   app "macclean.app"
 
+  # Homebrew quarantines every cask since v7 (no opt-out flag). Our own tap
+  # can strip it post-install — the app then opens with no warning at all.
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-dr", "com.apple.quarantine", "#{appdir}/macclean.app"]
+  end
+
   caveats <<~EOS
-    macclean is unsigned. To skip the Gatekeeper warning entirely:
-      brew install --cask macclean --no-quarantine
-    Otherwise right-click the app → Open once.
+    macclean is unsigned — the cask removes the quarantine attribute on
+    install, so it opens cleanly with no Gatekeeper warning.
   EOS
 end
 EOF
