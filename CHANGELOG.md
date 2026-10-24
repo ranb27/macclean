@@ -15,9 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   regenerable — review-level and arbitrary paths are always skipped.
 - **Connect AI** button — one-click wiring for the big MCP clients
   (Claude Desktop + Code, OpenAI Codex, Google Gemini), copy-snippet for
-  Devin/others. Shows `connected` when a config already names macclean,
-  and **Test connection** runs a real `initialize` + `tools/list`
-  handshake against the server binary.
+  Devin/others. Shows `connected` when a config already names macclean
+  (button flips to **Disconnect**, removing our key without touching
+  other servers), and **Test connection** runs a real `initialize` +
+  `tools/list` handshake against the server binary.
 - System-following dark/light theme, embedded Inter font, reclaimable
   ring, background update check (top-right), centered scan spinner.
 - Landing page rework: dual themes via `prefers-color-scheme`,

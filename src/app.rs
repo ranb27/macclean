@@ -534,19 +534,24 @@ impl MacCleanApp {
                         }
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             let manual = matches!(c.method, connect::Method::Manual);
+                            let (label, enabled, color) = if manual {
+                                ("Copy", true, p.text)
+                            } else if wired {
+                                ("Disconnect", true, p.red)
+                            } else {
+                                ("Connect", detected, if detected { p.text } else { p.muted })
+                            };
                             let btn = ui.add_enabled(
-                                detected || manual,
-                                egui::Button::new(
-                                    RichText::new(if manual { "Copy" } else { "Connect" })
-                                        .size(11.5)
-                                        .color(if detected || manual { p.text } else { p.muted }),
-                                ),
+                                enabled,
+                                egui::Button::new(RichText::new(label).size(11.5).color(color)),
                             );
                             if btn.clicked() {
                                 if manual {
                                     copy_clipboard(&connect::snippet());
                                     self.connect_status
                                         .insert(c.name, Ok("snippet copied".into()));
+                                } else if wired {
+                                    self.connect_status.insert(c.name, connect::disconnect(c));
                                 } else {
                                     self.connect_status.insert(c.name, connect::connect(c));
                                 }

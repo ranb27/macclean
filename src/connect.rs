@@ -206,6 +206,89 @@ pub fn connect(c: &Client) -> Result<String, String> {
     }
 }
 
+/// Remove the macclean entry — the inverse of `connect`.
+pub fn disconnect(c: &Client) -> Result<String, String> {
+    match &c.method {
+        Method::McpJson(rel) => {
+            let path = home().join(rel);
+            remove_json_key(&path)?;
+            Ok(format!("removed from {}", path.display()))
+        }
+        Method::CodexToml(rel) => {
+            let path = home().join(rel);
+            remove_toml_key(&path)?;
+            Ok(format!("removed from {}", path.display()))
+        }
+        Method::Claude => {
+            let mut done = Vec::new();
+            let path = home().join(CLAUDE_DESKTOP_CFG);
+            if json_has_macclean(&path) {
+                remove_json_key(&path)?;
+                done.push("Desktop");
+            }
+            let code_cfg = home().join(CLAUDE_CODE_CFG);
+            if json_has_macclean(&code_cfg) {
+                if which("claude").is_some() {
+                    claude_cli_remove()?;
+                } else {
+                    // CLI gone but the config remains — edit it directly.
+                    remove_json_key(&code_cfg)?;
+                }
+                done.push("Code");
+            }
+            if done.is_empty() {
+                Err("macclean isn't in any Claude config".into())
+            } else {
+                Ok(format!("removed from Claude {}", done.join(" + ")))
+            }
+        }
+        Method::Manual => Err("nothing to disconnect".into()),
+    }
+}
+
+fn claude_cli_remove() -> Result<(), String> {
+    let bin = which("claude").unwrap();
+    // entries we add are user-scope; try that first, then a bare remove.
+    for args in [
+        &["mcp", "remove", "macclean", "-s", "user"][..],
+        &["mcp", "remove", "macclean"][..],
+    ] {
+        if let Ok(out) = std::process::Command::new(&bin).args(args).output()
+            && out.status.success()
+        {
+            return Ok(());
+        }
+    }
+    Err("`claude mcp remove` failed".into())
+}
+
+fn remove_json_key(path: &Path) -> Result<(), String> {
+    let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let mut root: Value = serde_json::from_str(&text).map_err(|e| format!("invalid JSON: {e}"))?;
+    let Some(servers) = root.get_mut("mcpServers").and_then(Value::as_object_mut) else {
+        return Err("no mcpServers in config".into());
+    };
+    servers.remove("macclean");
+    std::fs::write(path, serde_json::to_string_pretty(&root).unwrap() + "\n")
+        .map_err(|e| e.to_string())
+}
+
+fn remove_toml_key(path: &Path) -> Result<(), String> {
+    let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let mut root: toml::Table = text.parse().map_err(|e| format!("invalid TOML: {e}"))?;
+    if let Some(t) = root
+        .get_mut("mcp_servers")
+        .and_then(toml::Value::as_table_mut)
+    {
+        t.remove("macclean");
+    }
+    std::fs::write(
+        path,
+        toml::to_string_pretty(&root).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())
+}
+
 fn claude_cli_add(exe: &str) -> Result<(), String> {
     let bin = which("claude").unwrap();
     let out = std::process::Command::new(bin)
@@ -375,6 +458,25 @@ mod tests {
             "/x"
         );
         assert_eq!(v["model"].as_str().unwrap(), "o4");
+    }
+
+    #[test]
+    fn disconnect_round_trip() {
+        let path = tempdir("rt").join("cfg.json");
+        merge_json(&path, |m| {
+            m.insert(
+                "macclean".into(),
+                json!({"command": "/x", "args": ["--mcp"]}),
+            );
+            m.insert("other".into(), json!({"command": "/y"}));
+        })
+        .unwrap();
+        assert!(json_has_macclean(&path));
+        remove_json_key(&path).unwrap();
+        assert!(!json_has_macclean(&path));
+        // sibling server survives the removal
+        let v: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(v["mcpServers"]["other"]["command"], "/y");
     }
 
     #[test]
