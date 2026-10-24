@@ -1,4 +1,4 @@
-use crate::model::{Category, CleanTarget, Safety, fmt_size};
+use crate::model::{Action, Category, CleanTarget, Safety, fmt_size};
 use crate::scan::{self, ScanResult};
 use crate::trash;
 use eframe::egui;
@@ -55,11 +55,11 @@ impl MacCleanApp {
             .filter(|t| t.selected)
             .map(|t| (t.path.clone(), t.action))
             .collect();
-        self.status = format!("Moving {} items to Trash…", selected.len());
+        self.status = format!("Cleaning {} items…", selected.len());
         self.errors.clear();
         std::thread::spawn(move || {
             for (path, action) in selected {
-                let result = trash::remove(&path, action);
+                let result = trash::execute(&path, action);
                 if tx.send((path, result)).is_err() {
                     break;
                 }
@@ -120,7 +120,7 @@ impl MacCleanApp {
                 .map(|t| t.size)
                 .sum();
             self.targets.retain(|t| !done_paths.contains(&t.path));
-            self.status = format!("Moved items to Trash — {} freed", fmt_size(freed));
+            self.status = format!("Cleaned — {} freed", fmt_size(freed));
         }
         if disconnected {
             self.deleting = false;
@@ -204,7 +204,7 @@ impl eframe::App for MacCleanApp {
         egui::Panel::bottom("bottom").show(ui, |ui| {
             ui.horizontal(|ui| {
                 let (n, size) = self.selected_total();
-                let label = format!("Move {} items to Trash ({})", n, fmt_size(size));
+                let label = format!("Clean {} items ({})", n, fmt_size(size));
                 let btn = ui.add_enabled(
                     n > 0 && !self.deleting && !self.scanning,
                     egui::Button::new(label),
@@ -264,7 +264,11 @@ impl eframe::App for MacCleanApp {
                                 .filter(|t| filter.is_none_or(|c| t.category == c))
                             {
                                 ui.checkbox(&mut t.selected, "");
-                                ui.monospace(fmt_size(t.size));
+                                if t.size == 0 && matches!(t.action, Action::Command(_)) {
+                                    ui.monospace("—");
+                                } else {
+                                    ui.monospace(fmt_size(t.size));
+                                }
                                 match t.safety {
                                     Safety::Regenerable => {
                                         ui.colored_label(
@@ -279,8 +283,12 @@ impl eframe::App for MacCleanApp {
                                         );
                                     }
                                 }
-                                let path_str = t.path.display().to_string();
-                                ui.label(&path_str).on_hover_text(path_str);
+                                if let Action::Command(spec) = t.action {
+                                    ui.monospace(spec.display).on_hover_text(spec.display);
+                                } else {
+                                    let path_str = t.path.display().to_string();
+                                    ui.label(&path_str).on_hover_text(path_str);
+                                }
                                 ui.label(&t.reason);
                                 ui.end_row();
                             }

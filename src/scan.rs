@@ -1,10 +1,13 @@
-use crate::model::{Action, Category, CleanTarget, Safety};
+use crate::model::{Action, Category, CleanTarget, CommandSpec, Safety};
 use rayon::prelude::*;
 use std::collections::HashSet;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
 const MIN_SIZE: u64 = 5 * 1024 * 1024; // ignore dirs under 5 MB — noise
+/// Orphan .plist files are small by nature — they earn a row by being
+/// orphaned, not by size. Still skip the tiniest stubs.
+const PLIST_MIN: u64 = 4 * 1024;
 
 /// Paths that are always 100% regenerable package/dev tool caches.
 const DEV_CACHE_PATHS: &[(&str, &str)] = &[
@@ -28,6 +31,44 @@ const DEV_CACHE_PATHS: &[(&str, &str)] = &[
     ("Library/Caches/Yarn", "Yarn cache"),
     (".yarn/cache", "Yarn cache"),
     (".deno", "Deno cache"),
+];
+
+/// Big Xcode data that is regenerable in principle but expensive to lose —
+/// always Review. Distinct from `xcrun simctl delete unavailable`, which
+/// surgically removes only broken devices and is offered separately.
+const DEV_REVIEW_PATHS: &[(&str, &str)] = &[
+    (
+        "Library/Developer/CoreSimulator/Devices",
+        "all iOS simulator device data",
+    ),
+    (
+        "Library/Developer/Xcode/Archives",
+        "Xcode archives (signed app builds)",
+    ),
+    (
+        "Library/Developer/Xcode/iOS DeviceSupport",
+        "device debug symbols (re-downloaded on connect)",
+    ),
+];
+
+/// Whitelisted cleanup commands. Offered when a candidate binary exists and
+/// the tool has data on this machine. size_hint dirs are suppressed from the
+/// file scanners so the same bytes are never listed twice.
+const COMMAND_TARGETS: &[CommandSpec] = &[
+    CommandSpec {
+        bins: &["/opt/homebrew/bin/brew", "/usr/local/bin/brew"],
+        args: &["cleanup", "-s"],
+        display: "brew cleanup -s",
+        data_dirs: &["Library/Caches/Homebrew", "/opt/homebrew/Cellar"],
+        size_hint: &["Library/Caches/Homebrew"],
+    },
+    CommandSpec {
+        bins: &["/usr/bin/xcrun"],
+        args: &["simctl", "delete", "unavailable"],
+        display: "xcrun simctl delete unavailable",
+        data_dirs: &["Library/Developer/CoreSimulator"],
+        size_hint: &[],
+    },
 ];
 
 /// Cache-like subdirs inside Application Support/<app>/ — safe for
@@ -64,11 +105,18 @@ const LEFTOVER_SKIP_PREFIXES: &[&str] = &[
     "ns.",
     "group.com.apple",
     "icloud",
+    "clouddocs",
+    "fileprovider",
     "syncservices",
     "crashreporter",
     "knowledge",
     "callservicesd",
     "caches",
+    // Apple system entries that don't use com.apple naming (HTTPStorages,
+    // Application Support) — flagging them would break live daemons.
+    "spotlight",
+    "familycircle",
+    "mbuseragent",
 ];
 
 pub struct ScanResult {
@@ -110,11 +158,18 @@ pub fn scan_all() -> ScanResult {
     targets.extend(scan_devtools(&home));
     targets.extend(scan_logs(&home));
 
-    let (mut cache_t, mut cache_e) = scan_app_caches(&home, &installed);
+    let (mut cmd_t, covered) = scan_commands(&home);
+    targets.append(&mut cmd_t);
+
+    let (mut cache_t, mut cache_e) = scan_app_caches(&home, &installed, &covered);
     targets.append(&mut cache_t);
     errors.append(&mut cache_e);
 
-    targets.extend(scan_leftovers(&home, &installed));
+    let (mut leftover_t, leftover_names) = scan_leftovers(&home, &installed);
+    targets.append(&mut leftover_t);
+    targets.extend(scan_launch_agents(&home, &installed));
+    targets.extend(scan_preferences(&home, &installed, &leftover_names));
+    targets.extend(scan_downloads(&home, &installed));
 
     targets.sort_by_key(|t| std::cmp::Reverse(t.size));
     ScanResult { targets, errors }
@@ -123,7 +178,7 @@ pub fn scan_all() -> ScanResult {
 // ---------- dev caches ----------
 
 fn scan_devtools(home: &Path) -> Vec<CleanTarget> {
-    DEV_CACHE_PATHS
+    let caches = DEV_CACHE_PATHS
         .par_iter()
         .filter_map(|(rel, reason)| {
             let path = home.join(rel);
@@ -137,13 +192,79 @@ fn scan_devtools(home: &Path) -> Vec<CleanTarget> {
                 )
             })
         })
-        .flatten()
-        .collect()
+        .flatten();
+    let review = DEV_REVIEW_PATHS
+        .par_iter()
+        .filter_map(|(rel, reason)| {
+            let path = home.join(rel);
+            path.is_dir().then(|| {
+                sized(
+                    path,
+                    Category::DevCaches,
+                    Safety::Review,
+                    Action::Trash,
+                    *reason,
+                )
+            })
+        })
+        .flatten();
+    caches.chain(review).collect()
+}
+
+// ---------- command targets ----------
+
+/// Home-relative entries joined to home; absolute entries used as-is.
+fn resolve_dir(home: &Path, dir: &str) -> PathBuf {
+    if dir.starts_with('/') {
+        PathBuf::from(dir)
+    } else {
+        home.join(dir)
+    }
+}
+
+/// Whitelisted cleanup commands, offered when the tool is installed and has
+/// data here. Returns the targets plus the dirs a command already manages —
+/// file scanners skip those so bytes are never listed twice.
+fn scan_commands(home: &Path) -> (Vec<CleanTarget>, HashSet<PathBuf>) {
+    let mut targets = Vec::new();
+    let mut covered = HashSet::new();
+    for spec in COMMAND_TARGETS {
+        let Some(bin) = spec.resolve_bin() else {
+            continue;
+        };
+        if !spec.data_dirs.iter().any(|d| resolve_dir(home, d).is_dir()) {
+            continue;
+        }
+        for hint in spec.size_hint {
+            let dir = resolve_dir(home, hint);
+            if dir.is_dir() {
+                covered.insert(dir);
+            }
+        }
+        let size: u64 = spec
+            .size_hint
+            .iter()
+            .map(|d| path_size(&resolve_dir(home, d)))
+            .sum();
+        targets.push(CleanTarget::new(
+            bin,
+            size,
+            Category::DevCaches,
+            Safety::Regenerable,
+            Action::Command(spec),
+            format!("runs `{}`", spec.display),
+        ));
+    }
+    (targets, covered)
 }
 
 // ---------- app caches ----------
 
-fn scan_app_caches(home: &Path, installed: &HashSet<String>) -> (Vec<CleanTarget>, Vec<String>) {
+fn scan_app_caches(
+    home: &Path,
+    installed: &HashSet<String>,
+    covered: &HashSet<PathBuf>,
+) -> (Vec<CleanTarget>, Vec<String>) {
     let mut candidates: Vec<(PathBuf, String)> = Vec::new();
 
     // ~/Library/Caches/<entry> — one candidate per top-level entry.
@@ -152,6 +273,9 @@ fn scan_app_caches(home: &Path, installed: &HashSet<String>) -> (Vec<CleanTarget
             let name = e.file_name().to_string_lossy().to_string();
             if name.starts_with('.') || name.starts_with("com.apple") {
                 continue; // TCC-protected system caches — can't touch anyway
+            }
+            if covered.contains(&e.path()) {
+                continue; // a Command target already manages this dir
             }
             candidates.push((e.path(), "app cache".into()));
         }
@@ -196,8 +320,11 @@ fn scan_app_caches(home: &Path, installed: &HashSet<String>) -> (Vec<CleanTarget
 
 // ---------- leftovers ----------
 
-fn scan_leftovers(home: &Path, installed: &HashSet<String>) -> Vec<CleanTarget> {
+/// Leftover dirs plus their normalized names — the prefs scanner corroborates
+/// against this set so a lone system .plist is never flagged on its own.
+fn scan_leftovers(home: &Path, installed: &HashSet<String>) -> (Vec<CleanTarget>, HashSet<String>) {
     let mut candidates = Vec::new();
+    let mut names = HashSet::new();
 
     for dir in APP_DATA_DIRS {
         if let Ok(entries) = std::fs::read_dir(home.join("Library").join(dir)) {
@@ -210,13 +337,14 @@ fn scan_leftovers(home: &Path, installed: &HashSet<String>) -> Vec<CleanTarget> 
                     continue;
                 }
                 if !is_installed(&name, installed) {
+                    names.insert(normalize(&name));
                     candidates.push((e.path(), name));
                 }
             }
         }
     }
 
-    candidates
+    let targets = candidates
         .par_iter()
         .filter_map(|(p, name)| {
             sized(
@@ -227,12 +355,163 @@ fn scan_leftovers(home: &Path, installed: &HashSet<String>) -> Vec<CleanTarget> 
                 format!("no installed app matches \"{}\"", name),
             )
         })
-        .collect()
+        .collect();
+    (targets, names)
 }
 
 fn skip_leftover_name(name: &str) -> bool {
     let lower = name.to_lowercase();
     name.starts_with('.') || LEFTOVER_SKIP_PREFIXES.iter().any(|p| lower.starts_with(p))
+}
+
+// ---------- launch agents ----------
+
+/// ~/Library/LaunchAgents/*.plist whose owning app is gone. Matching is
+/// deliberately conservative: a label match OR a still-on-disk program
+/// binary means installed — breaking a live agent is worse than missing an
+/// orphan.
+fn scan_launch_agents(home: &Path, installed: &HashSet<String>) -> Vec<CleanTarget> {
+    let mut candidates = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(home.join("Library/LaunchAgents")) {
+        for e in entries.flatten() {
+            let p = e.path();
+            if p.extension().is_none_or(|x| x != "plist") {
+                continue;
+            }
+            let dict = plist::from_file::<_, plist::Value>(&p)
+                .ok()
+                .and_then(|v| v.as_dictionary().cloned());
+            let label = dict
+                .as_ref()
+                .and_then(|d| d.get("Label"))
+                .and_then(|v| v.as_string())
+                .map(String::from)
+                .or_else(|| p.file_stem().map(|s| s.to_string_lossy().into_owned()));
+            let Some(label) = label else { continue };
+            if skip_leftover_name(&label)
+                || is_installed(&label, installed)
+                || agent_program_exists(dict.as_ref())
+            {
+                continue;
+            }
+            candidates.push((p, label));
+        }
+    }
+    candidates
+        .par_iter()
+        .filter_map(|(p, label)| {
+            sized_min(
+                p.clone(),
+                0,
+                Category::Leftovers,
+                Safety::Review,
+                Action::Trash,
+                format!("launch agent \"{label}\" — no matching app"),
+            )
+        })
+        .collect()
+}
+
+/// The program an agent runs. If that binary still exists on disk the owning
+/// software is installed even when its label doesn't name-match the .app —
+/// e.g. vendor labels like com.google.Keystone.
+fn agent_program_exists(dict: Option<&plist::Dictionary>) -> bool {
+    let Some(dict) = dict else { return false };
+    let prog = dict.get("Program").and_then(|v| v.as_string()).or_else(|| {
+        dict.get("ProgramArguments")
+            .and_then(|v| v.as_array())
+            .and_then(|a| a.first())
+            .and_then(|v| v.as_string())
+    });
+    prog.is_some_and(|p| p.starts_with('/') && Path::new(p).exists())
+}
+
+// ---------- preference plists ----------
+
+/// ~/Library/Preferences/*.plist that corroborate a flagged leftover dir —
+/// a plist alone is never enough: plenty of system prefs (org.cups.*,
+/// sharedfilelistd) don't start with com.apple and would be false positives.
+fn scan_preferences(
+    home: &Path,
+    installed: &HashSet<String>,
+    leftover_names: &HashSet<String>,
+) -> Vec<CleanTarget> {
+    let mut candidates = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(home.join("Library/Preferences")) {
+        for e in entries.flatten() {
+            let p = e.path();
+            if !p.is_file() || p.extension().is_none_or(|x| x != "plist") {
+                continue; // ByHost/ and other subdirs are system-managed
+            }
+            let Some(stem) = p.file_stem().map(|s| s.to_string_lossy().into_owned()) else {
+                continue;
+            };
+            if skip_leftover_name(&stem) || is_installed(&stem, installed) {
+                continue;
+            }
+            let n = normalize(&stem);
+            let corroborated = n.len() >= 5
+                && leftover_names
+                    .iter()
+                    .any(|l| l.len() >= 5 && (n.contains(l.as_str()) || l.contains(&n)));
+            if !corroborated {
+                continue;
+            }
+            candidates.push((p, stem));
+        }
+    }
+    candidates
+        .par_iter()
+        .filter_map(|(p, stem)| {
+            sized_min(
+                p.clone(),
+                PLIST_MIN,
+                Category::Leftovers,
+                Safety::Review,
+                Action::Trash,
+                format!("no installed app matches \"{stem}\""),
+            )
+        })
+        .collect()
+}
+
+// ---------- downloads ----------
+
+/// Installer images left in ~/Downloads. Always Review — we flag, user
+/// judges whether the app was installed (reason hints when it was).
+fn scan_downloads(home: &Path, installed: &HashSet<String>) -> Vec<CleanTarget> {
+    let mut candidates = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(home.join("Downloads")) {
+        for e in entries.flatten() {
+            let p = e.path();
+            let ext = p.extension().map(|x| x.to_string_lossy().to_lowercase());
+            if !p.is_file() || !matches!(ext.as_deref(), Some("dmg" | "pkg")) {
+                continue;
+            }
+            let stem = p
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            let reason = if is_installed(&stem, installed) {
+                "installer for an already-installed app"
+            } else {
+                "downloaded installer"
+            };
+            candidates.push((p, reason));
+        }
+    }
+    candidates
+        .par_iter()
+        .filter_map(|(p, reason)| {
+            sized(
+                p.clone(),
+                Category::Downloads,
+                Safety::Review,
+                Action::Trash,
+                *reason,
+            )
+        })
+        .collect()
 }
 
 // ---------- logs ----------
@@ -386,8 +665,21 @@ fn sized(
     action: Action,
     reason: impl Into<String>,
 ) -> Option<CleanTarget> {
+    sized_min(path, MIN_SIZE, category, safety, action, reason)
+}
+
+/// `sized` with a custom floor — orphan plists/agents are small by nature
+/// and earn a row by being orphaned, not by size.
+fn sized_min(
+    path: PathBuf,
+    min_size: u64,
+    category: Category,
+    safety: Safety,
+    action: Action,
+    reason: impl Into<String>,
+) -> Option<CleanTarget> {
     let size = path_size(&path);
-    (size >= MIN_SIZE).then(|| CleanTarget::new(path, size, category, safety, action, reason))
+    (size >= min_size).then(|| CleanTarget::new(path, size, category, safety, action, reason))
 }
 
 fn path_size(path: &Path) -> u64 {
@@ -445,5 +737,52 @@ mod tests {
         assert!(skip_leftover_name("com.apple.Spotlight"));
         assert!(skip_leftover_name(".hidden"));
         assert!(!skip_leftover_name("Codex"));
+    }
+
+    #[test]
+    fn launch_agent_labels_match_via_segments() {
+        let installed: HashSet<String> =
+            ["docker", "figma"].into_iter().map(String::from).collect();
+        assert!(is_installed("com.docker.helper", &installed));
+        assert!(is_installed("com.figma.Desktop.agent", &installed));
+        assert!(!is_installed("com.uninstalled.tool", &installed));
+    }
+
+    #[test]
+    fn pref_stems_match_installed_apps() {
+        let installed: HashSet<String> = ["brave", "googlechrome"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+        assert!(is_installed("com.brave.Browser", &installed));
+        assert!(is_installed("com.google.Chrome", &installed));
+        assert!(!is_installed("com.gone.App", &installed));
+    }
+
+    #[test]
+    fn command_specs_are_sane() {
+        for spec in COMMAND_TARGETS {
+            // No PATH lookups — a bare name could resolve to anything.
+            assert!(spec.bins.iter().all(|b| b.starts_with('/')));
+            assert!(!spec.args.is_empty());
+            // size_hint dirs must be a subset of data_dirs so "covered"
+            // never hides a dir the command doesn't relate to.
+            for hint in spec.size_hint {
+                assert!(spec.data_dirs.contains(hint));
+            }
+        }
+    }
+
+    #[test]
+    fn resolve_dir_handles_relative_and_absolute() {
+        let home = Path::new("/Users/x");
+        assert_eq!(
+            resolve_dir(home, "Library/Caches"),
+            home.join("Library/Caches")
+        );
+        assert_eq!(
+            resolve_dir(home, "/opt/homebrew"),
+            PathBuf::from("/opt/homebrew")
+        );
     }
 }

@@ -29,8 +29,11 @@ regenerated, and make deletion reversible.**
 | Category | Examples |
 |---|---|
 | Developer caches | `npm`, `bun`, `pnpm`, `yarn`, `uv`, `pip`, Go modules, Cargo, Gradle, Maven, Deno, Xcode `DerivedData` |
+| Developer data (review) | `CoreSimulator/Devices`, Xcode `Archives`, `iOS DeviceSupport` |
+| Cleanup commands | `brew cleanup -s`, `xcrun simctl delete unavailable` — run the tool's own cleanup instead of deleting files |
 | App caches | `~/Library/Caches/*`, `Application Support/<app>/{Cache, Code Cache, GPUCache, Service Worker, …}` — installed apps only |
-| App leftovers | Data dirs whose owning `.app` no longer exists (bundle-ID matching across `Application Support`, `Containers`, `Group Containers`, `HTTPStorages`, `Saved Application State`) |
+| App leftovers | Data dirs whose owning `.app` no longer exists (bundle-ID matching across `Application Support`, `Containers`, `Group Containers`, `HTTPStorages`, `Saved Application State`, `LaunchAgents`, `Preferences`) |
+| Downloads | `.dmg`/`.pkg` installers left in `~/Downloads` |
 | Logs | `~/Library/Logs/*`, Homebrew service logs (truncated in place so daemons keep their file handle) |
 
 The leftover detector is the interesting part: it reads `Info.plist` of every
@@ -63,15 +66,18 @@ Requires macOS + a Rust toolchain (`rustup` or `brew install rust`).
 ```
 scan (background thread)
   ├── DEV_CACHE_PATHS    fixed list of known-regenerable tool caches
+  ├── commands           whitelisted cleanups: brew cleanup, simctl delete
   ├── app caches         ~/Library/Caches + cache subdirs of installed apps
   ├── leftovers          Library entries matching no installed bundle ID
+  ├── downloads          installer images left in ~/Downloads
   └── logs               user + service logs
         │
         ▼
   CleanTarget { path, size, safety, action }
         │
         ▼
-  you select ──► Trash (NSFileManager) or Truncate for live log files
+  you select ──► Trash (NSFileManager), Truncate for live log files,
+                 or run the whitelisted command
 ```
 
 Notable implementation details:
@@ -87,9 +93,10 @@ Notable implementation details:
 
 ## Roadmap
 
-- [ ] LaunchAgent / LaunchDaemon leftover detection (needs sudo for system files)
-- [ ] Simulator & Xcode device cleanup via `simctl`
-- [ ] Homebrew `--prune` integration
+- [x] LaunchAgent leftover detection (`~/Library/LaunchAgents` orphans)
+- [x] Simulator & Xcode device cleanup via `simctl`
+- [x] Homebrew cleanup integration
+- [ ] `.app` bundle + `.dmg` distribution
 - [ ] Scheduled scan + menu-bar tray mode
 - [ ] Config file for custom paths / exclusions
 

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Action::Command` — whitelisted cleanup commands offered as targets:
+  `brew cleanup -s` (when Homebrew is installed) and
+  `xcrun simctl delete unavailable` (when CoreSimulator data exists). Fixed
+  argv and absolute binary paths; no shell involved.
+- New scanners:
+  - `~/Library/LaunchAgents` orphan agents — plist `Label` matched against
+    installed apps, plus a program-path existence check so agents whose
+    binary still exists are never flagged
+  - `~/Library/Developer` review-level data — `CoreSimulator/Devices`,
+    `Xcode/Archives`, `iOS DeviceSupport`
+  - `~/Library/Preferences` orphan `.plist` files — listed only when a
+    matching leftover dir was already flagged (corroborated orphans)
+  - `~/Downloads` `.dmg`/`.pkg` installer leftovers — new `Downloads`
+    category
+- `macclean --dump` — headless scan, one line per target, for scripting and
+  scanner verification
+
+### Changed
+
+- UI says "Clean items" instead of "Move to Trash" — not every action moves
+  a file now
+- Dirs managed by a Command target (e.g. `~/Library/Caches/Homebrew` for
+  `brew cleanup -s`) are suppressed from file scanners — never listed twice
+
+### Fixed
+
+- Apple system dirs without `com.apple` names (`CloudDocs`, `FileProvider`,
+  `Spotlight`, `familycircled`, `mbuseragent`) are no longer flagged as
+  leftovers — deleting them could disrupt iCloud and live daemons
+
 ## [0.1.0] - 2026-10-24
 
 First public release.
