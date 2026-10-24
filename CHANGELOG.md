@@ -13,10 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   assistant can inspect/clean the Mac: `disk_summary`, `scan_targets`,
   `clean_targets`. Cleaning is gated to targets a fresh scan reports as
   regenerable — review-level and arbitrary paths are always skipped.
-- **Connect AI** button — detects installed MCP clients (Claude Desktop,
-  Claude Code, Cursor, Windsurf, Codex, Gemini CLI, Zed) and merges the
-  server into their config with one click; copy-snippet fallback for
-  everything else.
+- **Connect AI** button — one-click wiring for the big MCP clients
+  (Claude Desktop + Code, OpenAI Codex, Google Gemini), copy-snippet for
+  Devin/others. Shows `connected` when a config already names macclean,
+  and **Test connection** runs a real `initialize` + `tools/list`
+  handshake against the server binary.
 - System-following dark/light theme, embedded Inter font, reclaimable
   ring, background update check (top-right), centered scan spinner.
 - Landing page rework: dual themes via `prefers-color-scheme`,

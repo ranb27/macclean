@@ -6,29 +6,22 @@
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
-/// How we decide the client is installed on this machine.
-pub enum Detect {
-    /// Home-relative dirs — detected if any exists.
-    Dirs(&'static [&'static str]),
-    /// Binary on PATH or at a well-known absolute path.
-    Bin(&'static [&'static str]),
-    /// Can't detect — always offer the manual path.
-    None,
+/// How we decide the client is installed on this machine — detected if
+/// any dir exists or any binary resolves (PATH + well-known locations).
+pub struct Detect {
+    pub dirs: &'static [&'static str],
+    pub bins: &'static [&'static str],
 }
 
 /// How a client gets wired.
 pub enum Method {
     /// `{"mcpServers": {"macclean": {command, args}}}` merged into JSON.
     McpJson(&'static str),
-    /// Zed's `context_servers` shape in settings.json.
-    ZedJson(&'static str),
     /// `[mcp_servers.macclean]` in Codex's config.toml.
     CodexToml(&'static str),
-    /// `bin` + args_prefix + exe + `--mcp` argv run directly.
-    Cli {
-        bin: &'static str,
-        args_prefix: &'static [&'static str],
-    },
+    /// Claude covers both surfaces: Desktop's config file plus the
+    /// `claude` CLI for Claude Code — we wire whichever are present.
+    Claude,
     /// No file to write — user pastes the snippet themselves.
     Manual,
 }
@@ -41,69 +34,58 @@ pub struct Client {
     pub note: &'static str,
 }
 
+/// Big-players list only — anyone else uses the generic snippet.
 pub const CLIENTS: &[Client] = &[
     Client {
-        name: "Claude Desktop",
-        detect: Detect::Dirs(&["Library/Application Support/Claude"]),
-        method: Method::McpJson("Library/Application Support/Claude/claude_desktop_config.json"),
-        note: "restart Claude Desktop to pick it up",
-    },
-    Client {
-        name: "Claude Code",
-        detect: Detect::Bin(&[
-            "claude",
-            "/opt/homebrew/bin/claude",
-            "/usr/local/bin/claude",
-        ]),
-        method: Method::Cli {
-            bin: "claude",
-            args_prefix: &["mcp", "add", "macclean", "-s", "user", "--"],
+        name: "Claude",
+        detect: Detect {
+            dirs: &["Library/Application Support/Claude"],
+            bins: &["claude"],
         },
-        note: "registered at user scope — available in every project",
+        method: Method::Claude,
+        note: "wires Desktop + Code — restart the app to pick it up",
     },
     Client {
-        name: "Cursor",
-        detect: Detect::Dirs(&[".cursor"]),
-        method: Method::McpJson(".cursor/mcp.json"),
-        note: "restart Cursor to pick it up",
-    },
-    Client {
-        name: "Windsurf",
-        detect: Detect::Dirs(&[".codeium/windsurf"]),
-        method: Method::McpJson(".codeium/windsurf/mcp_config.json"),
-        note: "restart Windsurf to pick it up",
-    },
-    Client {
-        name: "Codex CLI",
-        detect: Detect::Dirs(&[".codex"]),
+        name: "OpenAI Codex",
+        detect: Detect {
+            dirs: &[".codex"],
+            bins: &["codex"],
+        },
         method: Method::CodexToml(".codex/config.toml"),
         note: "new codex sessions pick it up",
     },
     Client {
-        name: "Gemini CLI",
-        detect: Detect::Dirs(&[".gemini"]),
+        name: "Google Gemini",
+        detect: Detect {
+            dirs: &[".gemini"],
+            bins: &["gemini"],
+        },
         method: Method::McpJson(".gemini/settings.json"),
         note: "new gemini sessions pick it up",
     },
     Client {
-        name: "Zed",
-        detect: Detect::Dirs(&[".config/zed"]),
-        method: Method::ZedJson(".config/zed/settings.json"),
-        note: "restart Zed to pick it up",
-    },
-    Client {
         name: "Devin",
-        detect: Detect::Dirs(&[".config/devin"]),
+        detect: Detect {
+            dirs: &[".config/devin"],
+            bins: &[],
+        },
         method: Method::Manual,
         note: "MCP servers are added in your Devin org settings",
     },
     Client {
         name: "Other MCP client",
-        detect: Detect::None,
+        detect: Detect {
+            dirs: &[],
+            bins: &[],
+        },
         method: Method::Manual,
         note: "paste into your client's mcpServers config",
     },
 ];
+
+const CLAUDE_DESKTOP_DIR: &str = "Library/Application Support/Claude";
+const CLAUDE_DESKTOP_CFG: &str = "Library/Application Support/Claude/claude_desktop_config.json";
+const CLAUDE_CODE_CFG: &str = ".claude.json";
 
 fn home() -> PathBuf {
     PathBuf::from(std::env::var("HOME").unwrap_or_default())
@@ -124,35 +106,27 @@ pub fn snippet() -> String {
     )
 }
 
+/// Installed on this machine?
 pub fn is_detected(c: &Client) -> bool {
-    match &c.detect {
-        Detect::Dirs(dirs) => dirs.iter().any(|d| home().join(d).exists()),
-        Detect::Bin(bins) => bins.iter().any(|b| {
-            if b.contains('/') {
-                Path::new(b).is_file()
-            } else {
-                which_on_path(b)
-            }
-        }),
-        Detect::None => false,
+    c.detect.dirs.iter().any(|d| home().join(d).exists())
+        || c.detect.bins.iter().any(|b| which(b).is_some())
+}
+
+/// Already wired — the config already names a `macclean` server.
+pub fn is_wired(c: &Client) -> bool {
+    match &c.method {
+        Method::McpJson(rel) => json_has_macclean(&home().join(rel)),
+        Method::CodexToml(rel) => toml_has_macclean(&home().join(rel)),
+        Method::Claude => {
+            json_has_macclean(&home().join(CLAUDE_DESKTOP_CFG))
+                || json_has_macclean(&home().join(CLAUDE_CODE_CFG))
+        }
+        Method::Manual => false,
     }
 }
 
 /// PATH lookups — GUI apps get a minimal PATH, so check the usual
 /// install spots on top of whatever PATH provides.
-fn which_on_path(bin: &str) -> bool {
-    let mut candidates: Vec<PathBuf> = std::env::var("PATH")
-        .unwrap_or_default()
-        .split(':')
-        .map(|d| Path::new(d).join(bin))
-        .collect();
-    for d in ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"] {
-        candidates.push(Path::new(d).join(bin));
-    }
-    candidates.push(home().join(".local/bin").join(bin));
-    candidates.iter().any(|p| p.is_file())
-}
-
 fn which(bin: &str) -> Option<PathBuf> {
     let mut candidates: Vec<PathBuf> = std::env::var("PATH")
         .unwrap_or_default()
@@ -166,26 +140,37 @@ fn which(bin: &str) -> Option<PathBuf> {
     candidates.into_iter().find(|p| p.is_file())
 }
 
+fn json_has_macclean(path: &Path) -> bool {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .map(|v| v["mcpServers"]["macclean"].is_object())
+        .unwrap_or(false)
+}
+
+fn toml_has_macclean(path: &Path) -> bool {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|t| t.parse::<toml::Table>().ok())
+        .and_then(|v| {
+            v.get("mcp_servers")?
+                .get("macclean")?
+                .as_table()
+                .map(|_| true)
+        })
+        .unwrap_or(false)
+}
+
 /// Connect one client. Returns a human-readable status line.
 pub fn connect(c: &Client) -> Result<String, String> {
     let exe = exe_path();
     match &c.method {
         Method::McpJson(rel) => {
             let path = home().join(rel);
-            merge_json(&path, "mcpServers", |m| {
+            merge_json(&path, |m| {
                 m.insert(
                     "macclean".into(),
                     json!({"command": exe, "args": ["--mcp"]}),
-                );
-            })?;
-            Ok(format!("wrote {}", path.display()))
-        }
-        Method::ZedJson(rel) => {
-            let path = home().join(rel);
-            merge_json(&path, "context_servers", |m| {
-                m.insert(
-                    "macclean".into(),
-                    json!({"command": {"path": exe, "args": ["--mcp"]}}),
                 );
             })?;
             Ok(format!("wrote {}", path.display()))
@@ -195,30 +180,87 @@ pub fn connect(c: &Client) -> Result<String, String> {
             merge_toml(&path, &exe)?;
             Ok(format!("wrote {}", path.display()))
         }
-        Method::Cli { bin, args_prefix } => {
-            let bin_path = which(bin).ok_or_else(|| format!("`{bin}` not found"))?;
-            let mut args: Vec<String> = args_prefix.iter().map(|s| s.to_string()).collect();
-            args.push(exe);
-            args.push("--mcp".into());
-            let out = std::process::Command::new(&bin_path)
-                .args(&args)
-                .output()
-                .map_err(|e| e.to_string())?;
-            if out.status.success() {
-                Ok(format!("registered via `{}`", bin_path.display()))
+        Method::Claude => {
+            let mut done = Vec::new();
+            if home().join(CLAUDE_DESKTOP_DIR).is_dir() {
+                let path = home().join(CLAUDE_DESKTOP_CFG);
+                merge_json(&path, |m| {
+                    m.insert(
+                        "macclean".into(),
+                        json!({"command": exe, "args": ["--mcp"]}),
+                    );
+                })?;
+                done.push("Desktop");
+            }
+            if which("claude").is_some() {
+                claude_cli_add(&exe)?;
+                done.push("Code");
+            }
+            if done.is_empty() {
+                Err("no Claude app found".into())
             } else {
-                Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+                Ok(format!("wired Claude {}", done.join(" + ")))
             }
         }
         Method::Manual => Err("no config file — copy the snippet below".into()),
     }
 }
 
-/// Merge `top_key.macclean = …` into a JSON file, preserving everything
+fn claude_cli_add(exe: &str) -> Result<(), String> {
+    let bin = which("claude").unwrap();
+    let out = std::process::Command::new(bin)
+        .args(["mcp", "add", "macclean", "-s", "user", "--", exe, "--mcp"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if out.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+    }
+}
+
+/// End-to-end check: spawn `macclean --mcp`, handshake, list tools.
+/// stdin closes after the requests → server exits on EOF.
+pub fn test_server() -> Result<String, String> {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let mut child = Command::new(exe)
+        .arg("--mcp")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    if let Some(mut w) = child.stdin.take() {
+        let init = format!(
+            "{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{{}},\"clientInfo\":{{\"name\":\"macclean-selftest\",\"version\":\"{}\"}}}}}}",
+            env!("CARGO_PKG_VERSION")
+        );
+        let _ = writeln!(w, "{init}");
+        let _ = writeln!(
+            w,
+            "{{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}}"
+        );
+    }
+    let out = child
+        .wait_with_output()
+        .map_err(|e| format!("server didn't exit: {e}"))?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    if text.contains("\"name\":\"macclean\"") && text.contains("\"clean_targets\"") {
+        Ok("server handshake ok — 3 tools advertised".into())
+    } else {
+        Err(format!(
+            "unexpected response: {}",
+            text.lines().next().unwrap_or("(empty)")
+        ))
+    }
+}
+
+/// Merge `mcpServers.macclean = …` into a JSON file, preserving everything
 /// else. Creates the file (and parent dirs) if missing.
 fn merge_json(
     path: &Path,
-    top_key: &str,
     edit: impl FnOnce(&mut serde_json::Map<String, Value>),
 ) -> Result<(), String> {
     let mut root: Value = match std::fs::read_to_string(path) {
@@ -235,10 +277,10 @@ fn merge_json(
     let servers = root
         .as_object_mut()
         .unwrap()
-        .entry(top_key)
+        .entry("mcpServers")
         .or_insert_with(|| json!({}));
     if !servers.is_object() {
-        return Err(format!("{}: `{top_key}` isn't an object", path.display()));
+        return Err(format!("{}: `mcpServers` isn't an object", path.display()));
     }
     edit(servers.as_object_mut().unwrap());
     if let Some(parent) = path.parent() {
@@ -296,7 +338,7 @@ mod tests {
     #[test]
     fn json_merge_creates_and_preserves() {
         let path = tempdir("json").join("cfg/config.json");
-        merge_json(&path, "mcpServers", |m| {
+        merge_json(&path, |m| {
             m.insert(
                 "macclean".into(),
                 json!({"command": "/x", "args": ["--mcp"]}),
@@ -308,7 +350,7 @@ mod tests {
 
         // second write into a file that already has other keys
         std::fs::write(&path, r#"{"other": 1, "mcpServers": {"keep": {}}}"#).unwrap();
-        merge_json(&path, "mcpServers", |m| {
+        merge_json(&path, |m| {
             m.insert(
                 "macclean".into(),
                 json!({"command": "/y", "args": ["--mcp"]}),
@@ -327,12 +369,20 @@ mod tests {
         std::fs::write(&path, "model = \"o4\"\n").unwrap();
         merge_toml(&path, "/x").unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
-        assert!(text.contains("[mcp_servers.macclean]") || text.contains("mcp_servers"));
         let v: toml::Table = text.parse().unwrap();
         assert_eq!(
             v["mcp_servers"]["macclean"]["command"].as_str().unwrap(),
             "/x"
         );
         assert_eq!(v["model"].as_str().unwrap(), "o4");
+    }
+
+    #[test]
+    fn wired_detection_reads_config() {
+        let dir = tempdir("wired");
+        let path = dir.join("s.json");
+        assert!(!json_has_macclean(&path));
+        std::fs::write(&path, r#"{"mcpServers":{"macclean":{"command":"/x"}}}"#).unwrap();
+        assert!(json_has_macclean(&path));
     }
 }

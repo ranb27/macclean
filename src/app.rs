@@ -251,6 +251,7 @@ pub struct MacCleanApp {
     update_started: bool,
     show_connect: bool,
     connect_status: HashMap<&'static str, Result<String, String>>,
+    test_result: Option<Result<String, String>>,
 }
 
 impl Default for MacCleanApp {
@@ -269,6 +270,7 @@ impl Default for MacCleanApp {
             update_started: false,
             show_connect: false,
             connect_status: HashMap::new(),
+            test_result: None,
         }
     }
 }
@@ -517,13 +519,16 @@ impl MacCleanApp {
                 ui.add_space(8.0);
                 for c in connect::CLIENTS {
                     let detected = connect::is_detected(c);
+                    let wired = connect::is_wired(c);
                     ui.horizontal(|ui| {
                         ui.add_sized(
                             vec2(130.0, 22.0),
                             egui::Label::new(RichText::new(c.name).size(13.0).color(p.text)),
                         );
-                        if detected {
-                            ui.label(RichText::new("installed").size(10.5).color(p.green));
+                        if wired {
+                            ui.label(RichText::new("connected").size(10.5).color(p.green));
+                        } else if detected {
+                            ui.label(RichText::new("installed").size(10.5).color(p.teal));
                         } else if !matches!(c.method, connect::Method::Manual) {
                             ui.label(RichText::new("not found").size(10.5).color(p.muted));
                         }
@@ -564,6 +569,26 @@ impl MacCleanApp {
                     ui.add_space(2.0);
                 }
                 ui.separator();
+                ui.horizontal(|ui| {
+                    if ui
+                        .add(egui::Button::new(
+                            RichText::new("Test connection").size(11.5).color(p.text),
+                        ))
+                        .on_hover_text("Spawn `macclean --mcp` and run the MCP handshake")
+                        .clicked()
+                    {
+                        self.test_result = Some(connect::test_server());
+                    }
+                    match &self.test_result {
+                        Some(Ok(msg)) => {
+                            ui.label(RichText::new(msg).size(11.0).color(p.green));
+                        }
+                        Some(Err(e)) => {
+                            ui.label(RichText::new(e).size(11.0).color(p.red));
+                        }
+                        None => {}
+                    }
+                });
                 ui.label(
                     RichText::new(format!("Config snippet: {}", connect::snippet()))
                         .size(10.5)

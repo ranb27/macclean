@@ -69,9 +69,11 @@ assistant can inspect and clean your Mac through the same safety rules the
 GUI uses.
 
 **Easiest setup:** click **Connect AI** in the app's toolbar — it detects
-installed clients (Claude Desktop, Claude Code, Cursor, Windsurf, Codex,
-Gemini CLI, Zed) and one click merges the server into that client's config,
-or copies the snippet for everything else.
+installed clients and wires them in one click: Claude (Desktop config +
+`claude mcp add`), OpenAI Codex (`config.toml`), and Google Gemini
+(`settings.json`). Devin is org-managed, so it and any other client get a
+copy-snippet instead. A **Test connection** button runs the MCP handshake
+against the server to confirm it answers.
 
 Or point your MCP client at the installed app manually:
 
