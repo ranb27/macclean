@@ -151,8 +151,21 @@
       </a>
     </div>
     <div class="navbar-end gap-2">
-      <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-sm">GitHub</a>
-      <a href="https://github.com/ranb27/macclean/releases" class="btn btn-ghost btn-sm">Releases</a>
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M3.5 9h17M3.5 15h17M12 3c2.5 2.6 3.9 5.7 3.9 9S14.5 18.4 12 21c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z"/></svg>
+          <span id="lang-label">EN</span>
+        </div>
+        <ul tabindex="-1" class="dropdown-content menu glass rounded-box z-50 w-36 p-2 shadow-lg">
+          <li><a data-lang="en">English</a></li>
+          <li><a data-lang="th">ไทย</a></li>
+          <li><a data-lang="zh">中文</a></li>
+          <li><a data-lang="ja">日本語</a></li>
+          <li><a data-lang="de">Deutsch</a></li>
+        </ul>
+      </div>
+      <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-sm" data-i18n="nav.github">GitHub</a>
+      <a href="https://github.com/ranb27/macclean/releases" class="btn btn-ghost btn-sm" data-i18n="nav.releases">Releases</a>
     </div>
   </div>
 
@@ -164,12 +177,12 @@
       <div class="hero-content flex-col items-start gap-12 p-0 lg:flex-row-reverse">
         <div class="max-w-xl">
           <div data-reveal>
-            <div class="badge badge-primary badge-outline mb-4">free · open source · macOS</div>
+            <div class="badge badge-primary badge-outline mb-4" data-i18n="hero.badge">free · open source · macOS</div>
           </div>
-          <h1 class="text-4xl font-extrabold leading-tight sm:text-5xl" data-reveal style="--reveal-delay:80ms">
+          <h1 class="text-4xl font-extrabold leading-tight sm:text-5xl" data-reveal style="--reveal-delay:80ms" data-i18n="hero.title">
             A disk cleaner that <span class="text-primary">can't hurt</span> your Mac.
           </h1>
-          <p class="py-6 text-lg opacity-80" data-reveal style="--reveal-delay:160ms">
+          <p class="py-6 text-lg opacity-80" data-reveal style="--reveal-delay:160ms" data-i18n="hero.sub">
             macclean finds caches, logs, and data left behind by uninstalled
             apps — then deletes through the Trash, so every cleanup is
             undoable. Nothing is removed until you say so.
@@ -178,22 +191,22 @@
             <a href="https://github.com/ranb27/macclean/releases/latest/download/macclean-macos-arm64.dmg"
                class="btn btn-primary btn-lg shadow-lg shadow-primary/30">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg>
-              Download for macOS
+              <span data-i18n="hero.download">Download for macOS</span>
             </a>
-            <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-lg">View on GitHub</a>
+            <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-lg" data-i18n="hero.github">View on GitHub</a>
           </div>
-          <p class="mt-4 text-sm opacity-60" data-reveal style="--reveal-delay:320ms">Apple Silicon · macOS 11+ · MIT license</p>
+          <p class="mt-4 text-sm opacity-60" data-reveal style="--reveal-delay:320ms" data-i18n="hero.specs">Apple Silicon · macOS 11+ · MIT license</p>
         </div>
 
         <!-- floating glass chips, Chainly-style depth cues -->
         <div class="relative hidden w-full max-w-sm flex-1 lg:block">
           <div class="glass-chip float-slow absolute -top-2 right-4 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:400ms">
             <p class="text-3xl font-extrabold text-primary">18.4 GB</p>
-            <p class="text-sm opacity-70">reclaimable found</p>
+            <p class="text-sm opacity-70" data-i18n="chip.reclaim">reclaimable found</p>
           </div>
           <div class="glass-chip float-slower absolute top-40 left-0 rounded-2xl px-5 py-4" data-reveal style="--reveal-delay:520ms">
             <p class="text-3xl font-extrabold text-secondary">Trash</p>
-            <p class="text-sm opacity-70">delete = always undoable</p>
+            <p class="text-sm opacity-70" data-i18n="chip.trash">delete = always undoable</p>
           </div>
         </div>
       </div>
@@ -207,7 +220,7 @@
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="screenshot-dark.png" />
           <source media="(prefers-color-scheme: light)" srcset="screenshot-light.png" />
-          <img src="screenshot-light.png" alt="macclean — scan results with safety badges" class="block w-full" />
+          <img src="screenshot-light.png" alt="macclean — scan results with safety badges" class="block w-full" data-i18n-alt="shot.alt" />
         </picture>
       </div>
       <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
@@ -220,8 +233,8 @@
       <div class="grid gap-6 md:grid-cols-3">
         <div class="card glass" data-reveal>
           <div class="card-body">
-            <h2 class="card-title">Safe by construction</h2>
-            <p class="opacity-80">
+            <h2 class="card-title" data-i18n="feat.safe.title">Safe by construction</h2>
+            <p class="opacity-80" data-i18n="feat.safe.body">
               Only regenerable targets are pre-ticked: caches, derived data,
               logs. Anything that needs judgement shows as
               <span class="badge badge-warning badge-sm align-middle">review</span>
@@ -231,8 +244,8 @@
         </div>
         <div class="card glass" data-reveal style="--reveal-delay:120ms">
           <div class="card-body">
-            <h2 class="card-title">Trash is the undo</h2>
-            <p class="opacity-80">
+            <h2 class="card-title" data-i18n="feat.trash.title">Trash is the undo</h2>
+            <p class="opacity-80" data-i18n="feat.trash.body">
               Every deletion goes through <code>NSFileManager</code> — the same
               mechanism Finder uses. Changed your mind? Open Trash and
               <kbd class="kbd kbd-sm">Put Back</kbd>. Live logs are truncated
@@ -242,8 +255,8 @@
         </div>
         <div class="card glass" data-reveal style="--reveal-delay:240ms">
           <div class="card-body">
-            <h2 class="card-title">Finds what apps forgot</h2>
-            <p class="opacity-80">
+            <h2 class="card-title" data-i18n="feat.orphan.title">Finds what apps forgot</h2>
+            <p class="opacity-80" data-i18n="feat.orphan.body">
               Orphaned LaunchAgents, preference files, and leftover directories
               from apps you deleted months ago — matched against what's still
               installed, so nothing you use gets flagged.
@@ -256,41 +269,41 @@
 
   <!-- what it scans -->
   <div class="mx-auto max-w-4xl px-4 pb-16">
-    <h2 class="mb-6 text-2xl font-bold" data-reveal>What it scans</h2>
+    <h2 class="mb-6 text-2xl font-bold" data-reveal data-i18n="scan.heading">What it scans</h2>
     <div class="glass rounded-box overflow-x-auto" data-reveal style="--reveal-delay:120ms">
       <table class="table">
         <thead>
-          <tr><th>Category</th><th>Examples</th><th>Default</th></tr>
+          <tr><th data-i18n="tbl.cat">Category</th><th data-i18n="tbl.ex">Examples</th><th data-i18n="tbl.def">Default</th></tr>
         </thead>
         <tbody>
           <tr>
-            <td class="font-semibold">Developer caches</td>
-            <td>Xcode DerivedData, npm/pip/uv caches, Rust target dirs, simulator devices</td>
+            <td class="font-semibold" data-i18n="row.dev">Developer caches</td>
+            <td data-i18n="row.dev.ex">Xcode DerivedData, npm/pip/uv caches, Rust target dirs, simulator devices</td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
           <tr>
-            <td class="font-semibold">App caches</td>
-            <td>Spotify, Discord, Slack, Chrome cache directories</td>
+            <td class="font-semibold" data-i18n="row.app">App caches</td>
+            <td data-i18n="row.app.ex">Spotify, Discord, Slack, Chrome cache directories</td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
           <tr>
-            <td class="font-semibold">App leftovers</td>
-            <td>Application Support, Preferences, LaunchAgents of uninstalled apps</td>
+            <td class="font-semibold" data-i18n="row.left">App leftovers</td>
+            <td data-i18n="row.left.ex">Application Support, Preferences, LaunchAgents of uninstalled apps</td>
             <td><span class="badge badge-warning badge-sm">review</span></td>
           </tr>
           <tr>
-            <td class="font-semibold">Downloads</td>
-            <td>.dmg / .pkg installers you've already run</td>
+            <td class="font-semibold" data-i18n="row.dl">Downloads</td>
+            <td data-i18n="row.dl.ex">.dmg / .pkg installers you've already run</td>
             <td><span class="badge badge-warning badge-sm">review</span></td>
           </tr>
           <tr>
-            <td class="font-semibold">Logs</td>
-            <td>~/Library/Logs, Homebrew logs — truncated, not moved</td>
+            <td class="font-semibold" data-i18n="row.log">Logs</td>
+            <td data-i18n="row.log.ex">~/Library/Logs, Homebrew logs — truncated, not moved</td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
           <tr>
-            <td class="font-semibold">Commands</td>
-            <td><code>brew cleanup -s</code>, <code>xcrun simctl delete unavailable</code></td>
+            <td class="font-semibold" data-i18n="row.cmd">Commands</td>
+            <td data-i18n="row.cmd.ex"><code>brew cleanup -s</code>, <code>xcrun simctl delete unavailable</code></td>
             <td><span class="badge badge-success badge-sm">safe</span></td>
           </tr>
         </tbody>
@@ -300,19 +313,19 @@
 
   <!-- install steps -->
   <div class="mx-auto max-w-4xl px-4 pb-16">
-    <h2 class="mb-6 text-2xl font-bold" data-reveal>Install in 30 seconds</h2>
+    <h2 class="mb-6 text-2xl font-bold" data-reveal data-i18n="install.heading">Install in 30 seconds</h2>
     <div class="glass rounded-box p-6" data-reveal style="--reveal-delay:120ms">
       <ul class="steps steps-vertical w-full lg:steps-horizontal">
-        <li class="step step-primary">Download the .dmg</li>
-        <li class="step step-primary">Drag macclean to Applications</li>
-        <li class="step step-primary">Right-click → Open (first launch)</li>
-        <li class="step">Press Scan</li>
+        <li class="step step-primary" data-i18n="step.dl">Download the .dmg</li>
+        <li class="step step-primary" data-i18n="step.drag">Drag macclean to Applications</li>
+        <li class="step step-primary" data-i18n="step.open">Right-click → Open (first launch)</li>
+        <li class="step" data-i18n="step.scan">Press Scan</li>
       </ul>
       <div class="alert alert-warning mt-6">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         <div>
-          <h3 class="font-bold">Unsigned build — Gatekeeper will warn once</h3>
-          <p class="text-sm">
+          <h3 class="font-bold" data-i18n="alert.title">Unsigned build — Gatekeeper will warn once</h3>
+          <p class="text-sm" data-i18n="alert.body">
             The app isn't notarized yet. On first launch macOS says it "can't be
             opened" — right-click the app → <strong>Open</strong> →
             <strong>Open anyway</strong>. From then on it launches normally.
@@ -328,7 +341,7 @@
     <aside>
       <img src="icon.png" alt="" class="h-10 w-10" />
       <p class="font-bold">macclean</p>
-      <p class="opacity-60">A safe disk cleaner for macOS. MIT licensed.</p>
+      <p class="opacity-60" data-i18n="footer.tag">A safe disk cleaner for macOS. MIT licensed.</p>
       <p class="opacity-40">
         <a class="link" href="https://github.com/ranb27/macclean">GitHub</a> ·
         <a class="link" href="https://github.com/ranb27/macclean/releases">Releases</a>
@@ -414,6 +427,226 @@
       if (!reduceMotion.matches) requestAnimationFrame(frame);
     }
     frame();
+  </script>
+
+  <!-- i18n — EN source + TH/ZH/JA/DE. Pick: localStorage → browser lang → en -->
+  <script>
+    const I18N = {
+      en: {
+        "meta.title": "macclean — a disk cleaner that can't hurt your Mac",
+        "meta.desc": "macclean finds caches, logs, and data left behind by uninstalled apps — and deletes through the Trash, so every cleanup is undoable. Free and open source for macOS.",
+        "nav.github": "GitHub",
+        "nav.releases": "Releases",
+        "hero.badge": "free · open source · macOS",
+        "hero.title": 'A disk cleaner that <span class="text-primary">can\'t hurt</span> your Mac.',
+        "hero.sub": "macclean finds caches, logs, and data left behind by uninstalled apps — then deletes through the Trash, so every cleanup is undoable. Nothing is removed until you say so.",
+        "hero.download": "Download for macOS",
+        "hero.github": "View on GitHub",
+        "hero.specs": "Apple Silicon · macOS 11+ · MIT license",
+        "chip.reclaim": "reclaimable found",
+        "chip.trash": "delete = always undoable",
+        "shot.alt": "macclean — scan results with safety badges",
+        "feat.safe.title": "Safe by construction",
+        "feat.safe.body": 'Only regenerable targets are pre-ticked: caches, derived data, logs. Anything that needs judgement shows as <span class="badge badge-warning badge-sm align-middle">review</span> and stays unticked.',
+        "feat.trash.title": "Trash is the undo",
+        "feat.trash.body": 'Every deletion goes through <code>NSFileManager</code> — the same mechanism Finder uses. Changed your mind? Open Trash and <kbd class="kbd kbd-sm">Put Back</kbd>. Live logs are truncated in place, not moved.',
+        "feat.orphan.title": "Finds what apps forgot",
+        "feat.orphan.body": "Orphaned LaunchAgents, preference files, and leftover directories from apps you deleted months ago — matched against what's still installed, so nothing you use gets flagged.",
+        "scan.heading": "What it scans",
+        "tbl.cat": "Category",
+        "tbl.ex": "Examples",
+        "tbl.def": "Default",
+        "row.dev": "Developer caches",
+        "row.dev.ex": "Xcode DerivedData, npm/pip/uv caches, Rust target dirs, simulator devices",
+        "row.app": "App caches",
+        "row.app.ex": "Spotify, Discord, Slack, Chrome cache directories",
+        "row.left": "App leftovers",
+        "row.left.ex": "Application Support, Preferences, LaunchAgents of uninstalled apps",
+        "row.dl": "Downloads",
+        "row.dl.ex": ".dmg / .pkg installers you've already run",
+        "row.log": "Logs",
+        "row.log.ex": "~/Library/Logs, Homebrew logs — truncated, not moved",
+        "row.cmd": "Commands",
+        "row.cmd.ex": "<code>brew cleanup -s</code>, <code>xcrun simctl delete unavailable</code>",
+        "install.heading": "Install in 30 seconds",
+        "step.dl": "Download the .dmg",
+        "step.drag": "Drag macclean to Applications",
+        "step.open": "Right-click → Open (first launch)",
+        "step.scan": "Press Scan",
+        "alert.title": "Unsigned build — Gatekeeper will warn once",
+        "alert.body": 'The app isn\'t notarized yet. On first launch macOS says it "can\'t be opened" — right-click the app → <strong>Open</strong> → <strong>Open anyway</strong>. From then on it launches normally. Source and build workflow are public on GitHub.',
+        "footer.tag": "A safe disk cleaner for macOS. MIT licensed.",
+      },
+      th: {
+        "meta.title": "macclean — โปรแกรมล้างดิสก์ที่ทำร้าย Mac ของคุณไม่ได้",
+        "meta.desc": "macclean ค้นหาแคช ล็อก และไฟล์ที่แอปทิ้งไว้หลังถอนการติดตั้ง แล้วลบผ่าน Trash — ทุกครั้งกู้คืนได้ ฟรีและโอเพนซอร์สสำหรับ macOS",
+        "nav.github": "GitHub",
+        "nav.releases": "Releases",
+        "hero.badge": "ฟรี · โอเพนซอร์ส · macOS",
+        "hero.title": 'โปรแกรมล้างดิสก์ที่<span class="text-primary">ทำร้าย Mac ของคุณไม่ได้</span>',
+        "hero.sub": "macclean ค้นหาแคช ล็อก และไฟล์ที่แอปทิ้งไว้หลังถอนการติดตั้ง — แล้วลบผ่าน Trash ทำให้ทุกการล้างกู้คืนได้ ไม่มีอะไรถูกลบจนกว่าคุณจะสั่งเอง",
+        "hero.download": "ดาวน์โหลดสำหรับ macOS",
+        "hero.github": "ดูบน GitHub",
+        "hero.specs": "Apple Silicon · macOS 11+ · สัญญาอนุญาต MIT",
+        "chip.reclaim": "พื้นที่กู้คืนได้",
+        "chip.trash": "ลบ = ย้อนกลับได้เสมอ",
+        "shot.alt": "macclean — ผลการสแกนพร้อมป้ายระดับความปลอดภัย",
+        "feat.safe.title": "ปลอดภัยตั้งแต่การออกแบบ",
+        "feat.safe.body": 'เฉพาะรายการที่สร้างใหม่ได้เท่านั้นที่ถูกติ๊กไว้ล่วงหน้า: แคช derived data และล็อก รายการที่ต้องใช้วิจารณญาณจะแสดงเป็น <span class="badge badge-warning badge-sm align-middle">review</span> และยังไม่ถูกติ๊ก',
+        "feat.trash.title": "Trash คือปุ่มย้อนกลับ",
+        "feat.trash.body": 'ทุกการลบผ่าน <code>NSFileManager</code> — กลไกเดียวกับ Finder เปลี่ยนใจ? เปิด Trash แล้วเลือก <kbd class="kbd kbd-sm">Put Back</kbd> ล็อกที่กำลังใช้งานจะถูกตัดให้ว่างแทนที่จะย้าย',
+        "feat.orphan.title": "ค้นหาสิ่งที่แอปลืมไว้",
+        "feat.orphan.body": "LaunchAgents ที่เหลือค้าง ไฟล์ preference และโฟลเดอร์หลงเหลือจากแอปที่ลบไปหลายเดือนแล้ว — เทียบกับแอปที่ยังติดตั้งอยู่ แอปที่คุณใช้จะไม่ถูกแจ้งเตือน",
+        "scan.heading": "สแกนอะไรบ้าง",
+        "tbl.cat": "หมวดหมู่",
+        "tbl.ex": "ตัวอย่าง",
+        "tbl.def": "ค่าเริ่มต้น",
+        "row.dev": "แคชนักพัฒนา",
+        "row.dev.ex": "Xcode DerivedData, แคช npm/pip/uv, โฟลเดอร์ target ของ Rust, อุปกรณ์จำลอง",
+        "row.app": "แคชแอป",
+        "row.app.ex": "ไดเรกทอรีแคชของ Spotify, Discord, Slack, Chrome",
+        "row.left": "ไฟล์ค้างจากแอป",
+        "row.left.ex": "Application Support, Preferences, LaunchAgents ของแอปที่ถอนการติดตั้งแล้ว",
+        "row.dl": "ดาวน์โหลด",
+        "row.dl.ex": "ไฟล์ติดตั้ง .dmg / .pkg ที่เปิดไปแล้ว",
+        "row.log": "ล็อก",
+        "row.log.ex": "~/Library/Logs, ล็อก Homebrew — ตัดให้ว่างแทนการย้าย",
+        "row.cmd": "คำสั่ง",
+        "row.cmd.ex": "<code>brew cleanup -s</code>, <code>xcrun simctl delete unavailable</code>",
+        "install.heading": "ติดตั้งใน 30 วินาที",
+        "step.dl": "ดาวน์โหลดไฟล์ .dmg",
+        "step.drag": "ลาก macclean ไปที่ Applications",
+        "step.open": "คลิกขวา → Open (ครั้งแรก)",
+        "step.scan": "กด Scan",
+        "alert.title": "บิลด์ที่ยังไม่ได้เซ็น — Gatekeeper จะเตือนครั้งเดียว",
+        "alert.body": "แอปยังไม่ได้ notarize เปิดครั้งแรก macOS จะบอกว่า \"เปิดไม่ได้\" — คลิกขวาที่แอป → <strong>Open</strong> → <strong>Open anyway</strong> หลังจากนั้นเปิดได้ปกติ ซอร์สโค้ดและขั้นตอนการ build เปิดอยู่บน GitHub",
+        "footer.tag": "โปรแกรมล้างดิสก์ที่ปลอดภัยสำหรับ macOS สัญญาอนุญาต MIT",
+      },
+      zh: {
+        "meta.title": "macclean — 不会伤害你的 Mac 的磁盘清理工具",
+        "meta.desc": "macclean 帮你找出缓存、日志，以及已卸载应用留下的数据，并通过废纸篓删除——每次清理都可以撤销。免费开源，适用于 macOS。",
+        "nav.github": "GitHub",
+        "nav.releases": "版本发布",
+        "hero.badge": "免费 · 开源 · macOS",
+        "hero.title": '<span class="text-primary">不会伤害</span>你 Mac 的磁盘清理工具。',
+        "hero.sub": "macclean 帮你找出缓存、日志，以及已卸载应用留下的数据，然后通过废纸篓删除——每次清理都可以撤销。在你确认之前，不会删除任何内容。",
+        "hero.download": "下载 macOS 版",
+        "hero.github": "在 GitHub 查看",
+        "hero.specs": "Apple Silicon · macOS 11+ · MIT 许可",
+        "chip.reclaim": "可回收的空间",
+        "chip.trash": "删除 = 随时可撤销",
+        "shot.alt": "macclean — 带安全徽章的扫描结果",
+        "feat.safe.title": "从设计上保证安全",
+        "feat.safe.body": '只有可再生的项目才会被预先勾选：缓存、派生数据、日志。需要你判断的项目会显示为 <span class="badge badge-warning badge-sm align-middle">review</span>，并保持未勾选。',
+        "feat.trash.title": "废纸篓就是撤销键",
+        "feat.trash.body": '所有删除都通过 <code>NSFileManager</code>——与 Finder 相同的机制。改变主意了？打开废纸篓选择 <kbd class="kbd kbd-sm">放回原处</kbd>。正在写入的日志会被就地清空，而不是移动。',
+        "feat.orphan.title": "找出应用遗忘的数据",
+        "feat.orphan.body": "残留的 LaunchAgents、偏好设置文件，以及数月前删除的应用留下的目录——会与仍安装的应用逐一比对，你正在使用的内容不会被标记。",
+        "scan.heading": "扫描内容",
+        "tbl.cat": "类别",
+        "tbl.ex": "示例",
+        "tbl.def": "默认",
+        "row.dev": "开发者缓存",
+        "row.dev.ex": "Xcode DerivedData、npm/pip/uv 缓存、Rust target 目录、模拟器设备",
+        "row.app": "应用缓存",
+        "row.app.ex": "Spotify、Discord、Slack、Chrome 的缓存目录",
+        "row.left": "应用残留",
+        "row.left.ex": "已卸载应用的 Application Support、Preferences、LaunchAgents",
+        "row.dl": "下载目录",
+        "row.dl.ex": "已运行过的 .dmg / .pkg 安装包",
+        "row.log": "日志",
+        "row.log.ex": "~/Library/Logs、Homebrew 日志——就地清空而非移动",
+        "row.cmd": "命令",
+        "row.cmd.ex": "<code>brew cleanup -s</code>、<code>xcrun simctl delete unavailable</code>",
+        "install.heading": "30 秒完成安装",
+        "step.dl": "下载 .dmg",
+        "step.drag": "将 macclean 拖入「应用程序」",
+        "step.open": "右键 → 打开（首次启动）",
+        "step.scan": "点击 Scan",
+        "alert.title": "未签名构建 — Gatekeeper 只会警告一次",
+        "alert.body": "应用尚未公证。首次启动时 macOS 会提示「无法打开」——右键点击应用 → <strong>打开</strong> → <strong>仍要打开</strong>。之后即可正常启动。源码与构建流程在 GitHub 上完全公开。",
+        "footer.tag": "安全的 macOS 磁盘清理工具。MIT 许可。",
+      },
+      ja: {
+        "meta.title": "macclean — Mac を傷つけないディスククリーナー",
+        "meta.desc": "macclean はキャッシュ、ログ、削除済みアプリの残存データを見つけ、ゴミ箱経由で削除します。すべてのクリーンアップは取り消し可能。macOS 向け無料オープンソース。",
+        "nav.github": "GitHub",
+        "nav.releases": "リリース",
+        "hero.badge": "無料 · オープンソース · macOS",
+        "hero.title": 'Mac を<span class="text-primary">傷つけない</span>ディスククリーナー。',
+        "hero.sub": "macclean はキャッシュ、ログ、削除したアプリの残存データを見つけ、ゴミ箱経由で削除します。すべてのクリーンアップは取り消し可能で、あなたが指示するまで何も削除されません。",
+        "hero.download": "macOS 版をダウンロード",
+        "hero.github": "GitHub で見る",
+        "hero.specs": "Apple Silicon · macOS 11+ · MIT ライセンス",
+        "chip.reclaim": "回収可能な容量",
+        "chip.trash": "削除 = いつでも取り消し可能",
+        "shot.alt": "macclean — 安全バッジ付きスキャン結果",
+        "feat.safe.title": "設計から安全",
+        "feat.safe.body": '事前にチェックされるのは再生成可能なものだけ：キャッシュ、派生データ、ログ。判断が必要なものは <span class="badge badge-warning badge-sm align-middle">review</span> と表示され、チェックされません。',
+        "feat.trash.title": "ゴミ箱が取り消し機能",
+        "feat.trash.body": 'すべての削除は <code>NSFileManager</code> 経由 — Finder と同じ仕組みです。やっぱり戻したい？ゴミ箱を開いて <kbd class="kbd kbd-sm">戻す</kbd>。使用中のログは移動せずその場で切り詰めます。',
+        "feat.orphan.title": "アプリが忘れたものを発見",
+        "feat.orphan.body": "残った LaunchAgents、設定ファイル、数ヶ月前に削除したアプリの残存ディレクトリ — インストール済みアプリと照合するので、使用中のものは検出されません。",
+        "scan.heading": "スキャン対象",
+        "tbl.cat": "カテゴリ",
+        "tbl.ex": "例",
+        "tbl.def": "デフォルト",
+        "row.dev": "開発者キャッシュ",
+        "row.dev.ex": "Xcode DerivedData、npm/pip/uv キャッシュ、Rust target ディレクトリ、シミュレータデバイス",
+        "row.app": "アプリキャッシュ",
+        "row.app.ex": "Spotify、Discord、Slack、Chrome のキャッシュディレクトリ",
+        "row.left": "アプリの残存データ",
+        "row.left.ex": "削除済みアプリの Application Support、Preferences、LaunchAgents",
+        "row.dl": "ダウンロード",
+        "row.dl.ex": "実行済みの .dmg / .pkg インストーラー",
+        "row.log": "ログ",
+        "row.log.ex": "~/Library/Logs、Homebrew ログ — 移動せずその場で切り詰め",
+        "row.cmd": "コマンド",
+        "row.cmd.ex": "<code>brew cleanup -s</code>、<code>xcrun simctl delete unavailable</code>",
+        "install.heading": "30 秒でインストール",
+        "step.dl": ".dmg をダウンロード",
+        "step.drag": "macclean をアプリケーションにドラッグ",
+        "step.open": "右クリック → 開く（初回のみ）",
+        "step.scan": "Scan を押す",
+        "alert.title": "未署名ビルド — Gatekeeper の警告は一度だけ",
+        "alert.body": "アプリはまだ公証されていません。初回起動時に macOS が「開けません」と表示します — アプリを右クリック → <strong>開く</strong> → <strong>それでも開く</strong>。以降は普通に起動します。ソースとビルドワークフローは GitHub で公開しています。",
+        "footer.tag": "macOS 向け安全なディスククリーナー。MIT ライセンス。",
+      },
+    };
+
+    const LANG_LABEL = { en: "EN", th: "TH", zh: "ZH", ja: "JA", de: "DE" };
+    const stored = localStorage.getItem("macclean-lang");
+    const browser = (navigator.language || "en").slice(0, 2).toLowerCase();
+    let lang = stored || (LANG_LABEL[browser] ? browser : "en");
+
+    function applyLang(code) {
+      const dict = I18N[code] || I18N.en;
+      lang = code;
+      localStorage.setItem("macclean-lang", code);
+      document.documentElement.lang = code;
+      document.title = dict["meta.title"];
+      document.querySelector('meta[name="description"]')?.setAttribute("content", dict["meta.desc"]);
+      document.getElementById("lang-label").textContent = LANG_LABEL[code];
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const v = dict[el.dataset.i18n];
+        if (v !== undefined) el.innerHTML = v;
+      });
+      document.querySelectorAll("[data-i18n-alt]").forEach((el) => {
+        const v = dict[el.dataset.i18nAlt];
+        if (v !== undefined) el.alt = v;
+      });
+      document.querySelectorAll("[data-lang]").forEach((el) => {
+        el.classList.toggle("menu-active", el.dataset.lang === code);
+      });
+    }
+
+    document.querySelectorAll("[data-lang]").forEach((el) => {
+      el.addEventListener("click", () => {
+        applyLang(el.dataset.lang);
+        document.activeElement?.blur(); // close the dropdown
+      });
+    });
+    applyLang(lang);
   </script>
 
   <!-- scroll reveals -->
