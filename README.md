@@ -6,9 +6,7 @@ deletes it through the Trash — never `rm`, always recoverable.
 
 ![egui](https://img.shields.io/badge/GUI-egui-blue) ![platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![license](https://img.shields.io/badge/license-MIT-green) [![CI](https://github.com/ranb27/macclean/actions/workflows/ci.yml/badge.svg)](https://github.com/ranb27/macclean/actions/workflows/ci.yml)
 
-<!-- TODO: add screenshot — take one with ⌘⇧4 then Space and click the window,
-     save as assets/screenshot.png and uncomment the line below -->
-<!-- ![macclean](assets/screenshot.png) -->
+![macclean](assets/screenshot.png)
 
 ## Why another cleaner?
 

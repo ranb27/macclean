@@ -95,77 +95,11 @@
     </div>
   </div>
 
-  <!-- app preview (CSS mock of the real UI until a screenshot lands) -->
+  <!-- app preview -->
   <div class="mx-auto max-w-5xl px-4 pb-4">
     <div class="mockup-window border border-base-300 bg-base-200 shadow-2xl">
-      <div class="bg-base-100 px-4 py-5">
-        <!-- toolbar -->
-        <div class="flex items-center gap-3 border-b border-base-300 pb-3">
-          <span class="font-semibold">macclean</span>
-          <span class="btn btn-primary btn-xs pointer-events-none">Scan</span>
-          <span class="text-xs opacity-60">Found 82 targets — 16.4 GB potentially reclaimable</span>
-        </div>
-        <div class="flex">
-          <!-- sidebar -->
-          <div class="hidden sm:block w-52 shrink-0 border-r border-base-300 py-3 pr-3">
-            <p class="mb-2 text-xs font-semibold uppercase tracking-wide opacity-50">Categories</p>
-            <ul class="space-y-1 text-sm">
-              <li class="rounded px-2 py-1 opacity-80">Developer Caches <span class="float-right opacity-50">7.1 GB</span></li>
-              <li class="rounded px-2 py-1 opacity-80">App Caches <span class="float-right opacity-50">2.4 GB</span></li>
-              <li class="rounded px-2 py-1 opacity-80">App Leftovers <span class="float-right opacity-50">6.6 GB</span></li>
-              <li class="rounded px-2 py-1 opacity-80">Downloads <span class="float-right opacity-50">1.2 GB</span></li>
-              <li class="rounded px-2 py-1 opacity-80">Logs <span class="float-right opacity-50">214 MB</span></li>
-            </ul>
-          </div>
-          <!-- rows -->
-          <div class="min-w-0 flex-1 py-3 sm:pl-4">
-            <ul class="divide-y divide-base-300 text-sm">
-              <li class="flex items-center gap-3 py-2">
-                <input type="checkbox" checked class="checkbox checkbox-xs" tabindex="-1" />
-                <span class="w-16 shrink-0 font-mono text-xs">5.1 GB</span>
-                <span class="badge badge-warning badge-sm shrink-0">review</span>
-                <span class="truncate font-mono text-xs opacity-80">~/Library/Developer/CoreSimulator/Devices</span>
-              </li>
-              <li class="flex items-center gap-3 py-2">
-                <input type="checkbox" checked class="checkbox checkbox-xs checkbox-primary" tabindex="-1" />
-                <span class="w-16 shrink-0 font-mono text-xs">1.4 GB</span>
-                <span class="badge badge-success badge-sm shrink-0">safe</span>
-                <span class="truncate font-mono text-xs opacity-80">~/.cache/uv</span>
-              </li>
-              <li class="flex items-center gap-3 py-2">
-                <input type="checkbox" checked class="checkbox checkbox-xs checkbox-primary" tabindex="-1" />
-                <span class="w-16 shrink-0 font-mono text-xs">773 MB</span>
-                <span class="badge badge-success badge-sm shrink-0">safe</span>
-                <span class="truncate font-mono text-xs opacity-80">~/Library/Application Support/discord/Cache</span>
-              </li>
-              <li class="flex items-center gap-3 py-2">
-                <input type="checkbox" class="checkbox checkbox-xs" tabindex="-1" />
-                <span class="w-16 shrink-0 font-mono text-xs">394 MB</span>
-                <span class="badge badge-warning badge-sm shrink-0">review</span>
-                <span class="truncate font-mono text-xs opacity-80">~/Library/Application Support/dev.warp.Warp-Stable</span>
-              </li>
-              <li class="flex items-center gap-3 py-2">
-                <input type="checkbox" checked class="checkbox checkbox-xs checkbox-primary" tabindex="-1" />
-                <span class="w-16 shrink-0 font-mono text-xs">37 MB</span>
-                <span class="badge badge-success badge-sm shrink-0">safe</span>
-                <span class="truncate font-mono text-xs opacity-80">$ brew cleanup -s</span>
-              </li>
-              <li class="flex items-center gap-3 py-2">
-                <input type="checkbox" class="checkbox checkbox-xs" tabindex="-1" />
-                <span class="w-16 shrink-0 font-mono text-xs">86 MB</span>
-                <span class="badge badge-warning badge-sm shrink-0">review</span>
-                <span class="truncate font-mono text-xs opacity-80">~/Library/Group Containers/UBF8T346G9.Office</span>
-              </li>
-            </ul>
-            <div class="flex items-center justify-between pt-3">
-              <span class="text-xs opacity-50">review items stay unticked until you choose them</span>
-              <span class="btn btn-primary btn-sm pointer-events-none">Clean 41 items (9.8 GB)</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <img src="screenshot.png" alt="macclean — scan results with safety badges" class="block w-full" />
     </div>
-    <!-- When a real screenshot exists, swap this block for an <img src="screenshot.png"> -->
   </div>
 
   <!-- features -->
