@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-24
+
 ### Added
 
 - `Action::Command` — whitelisted cleanup commands offered as targets:
@@ -25,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     category
 - `macclean --dump` — headless scan, one line per target, for scripting and
   scanner verification
+- `.app` bundle + `.dmg` distribution — `scripts/package.sh` assembles
+  `macclean.app` (icon, `Info.plist`, ad-hoc signature) and packs a dmg with
+  an `/Applications` drop link; CI release job builds it on `v*` tags
+- Landing page at `docs/index.html` (GitHub Pages)
 
 ### Changed
 
@@ -81,5 +87,6 @@ First public release.
   containment now requires ≥5 chars on both sides
 - `com.apple.*` entries excluded from scans (TCC-protected, untrashable anyway)
 
-[Unreleased]: https://github.com/ranb27/macclean/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ranb27/macclean/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ranb27/macclean/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ranb27/macclean/releases/tag/v0.1.0

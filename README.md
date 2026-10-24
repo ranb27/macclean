@@ -2,6 +2,7 @@
 
 A safe, fast macOS disk cleaner written in Rust. Finds reclaimable disk space and
 deletes it through the Trash — never `rm`, always recoverable.
+[Download page →](https://ranb27.github.io/macclean)
 
 ![egui](https://img.shields.io/badge/GUI-egui-blue) ![platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![license](https://img.shields.io/badge/license-MIT-green) [![CI](https://github.com/ranb27/macclean/actions/workflows/ci.yml/badge.svg)](https://github.com/ranb27/macclean/actions/workflows/ci.yml)
 
@@ -42,14 +43,12 @@ the same orphans CleanMyMac charges you to find.
 
 ## Install & run
 
-**Prebuilt binary** (Apple Silicon):
+**Prebuilt app** (Apple Silicon, macOS 11+): download
+[macclean-macos-arm64.dmg](https://github.com/ranb27/macclean/releases/latest/download/macclean-macos-arm64.dmg),
+open it, drag `macclean` to Applications.
 
-```sh
-curl -L -o macclean.zip https://github.com/ranb27/macclean/releases/download/v0.1.0/macclean-v0.1.0-macos-arm64.zip
-unzip macclean.zip && ./macclean
-```
-
-Unsigned — on first run right-click → Open, or `xattr -d com.apple.quarantine macclean`.
+Unsigned — the first launch needs right-click → **Open** (once), or
+`xattr -d com.apple.quarantine /Applications/macclean.app`.
 
 **From source:**
 
@@ -96,7 +95,7 @@ Notable implementation details:
 - [x] LaunchAgent leftover detection (`~/Library/LaunchAgents` orphans)
 - [x] Simulator & Xcode device cleanup via `simctl`
 - [x] Homebrew cleanup integration
-- [ ] `.app` bundle + `.dmg` distribution
+- [x] `.app` bundle + `.dmg` distribution
 - [ ] Scheduled scan + menu-bar tray mode
 - [ ] Config file for custom paths / exclusions
 
