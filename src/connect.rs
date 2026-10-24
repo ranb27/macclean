@@ -46,7 +46,7 @@ pub const CLIENTS: &[Client] = &[
             bins: &["claude"],
         },
         method: Method::Claude,
-        note: "wires Desktop + Code — restart the app to pick it up",
+        note: "restart the app to pick it up",
     },
     Client {
         name: "OpenAI Codex",

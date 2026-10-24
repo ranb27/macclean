@@ -595,11 +595,14 @@ impl MacCleanApp {
                                 Color32::WHITE,
                             );
                             ui.add_space(10.0);
-                            ui.vertical(|ui| {
-                                ui.label(RichText::new(c.name).size(13.5).color(p.text));
-                                ui.label(RichText::new(c.sub).size(10.5).color(p.muted));
+                            // fixed-width name/sub column → badges align across rows
+                            ui.allocate_ui(vec2(165.0, 34.0), |ui| {
+                                ui.vertical(|ui| {
+                                    ui.label(RichText::new(c.name).size(13.5).color(p.text));
+                                    ui.label(RichText::new(c.sub).size(10.5).color(p.muted));
+                                });
                             });
-                            ui.add_space(8.0);
+                            ui.add_space(6.0);
                             let (badge, bc) = if wired {
                                 ("connected", p.green)
                             } else if detected {
@@ -614,6 +617,7 @@ impl MacCleanApp {
                                 .show(ui, |ui| {
                                     ui.label(RichText::new(badge).size(10.5).color(bc));
                                 });
+                            ui.add_space(12.0);
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 // chevron expand
                                 let (cr, chev) =
