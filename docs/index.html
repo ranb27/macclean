@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en" data-theme="macclean">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>macclean — a disk cleaner that can't hurt your Mac</title>
+  <meta name="description" content="macclean finds caches, logs, and data left behind by uninstalled apps — and deletes through the Trash, so every cleanup is undoable. Free and open source for macOS." />
+  <meta property="og:title" content="macclean" />
+  <meta property="og:description" content="A safe, fast macOS disk cleaner. Deletes through the Trash — always recoverable." />
+  <meta property="og:image" content="https://ranb27.github.io/macclean/icon.png" />
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    /* macclean theme — palette matches the app icon */
+    [data-theme="macclean"] {
+      color-scheme: dark;
+      --color-base-100: #0d1117;
+      --color-base-200: #141a24;
+      --color-base-300: #1e2632;
+      --color-base-content: #dbe4ef;
+      --color-primary: #3cc97e;
+      --color-primary-content: #0a140e;
+      --color-secondary: #38bdf8;
+      --color-secondary-content: #0a1420;
+      --color-accent: #e6a23c;
+      --color-accent-content: #171006;
+      --color-neutral: #2a3442;
+      --color-neutral-content: #dbe4ef;
+      --color-info: #38bdf8;
+      --color-info-content: #0a1420;
+      --color-success: #3cc97e;
+      --color-success-content: #0a140e;
+      --color-warning: #e6a23c;
+      --color-warning-content: #171006;
+      --color-error: #ef5f6b;
+      --color-error-content: #1c0a0c;
+      --radius-selector: 0.5rem;
+      --radius-field: 0.5rem;
+      --radius-box: 1rem;
+      --size-selector: 0.25rem;
+      --size-field: 0.25rem;
+      --border: 1px;
+      --depth: 1;
+      --noise: 0;
+    }
+    .glow {
+      background:
+        radial-gradient(42rem 26rem at 18% -8%, rgba(60, 201, 126, 0.14), transparent 60%),
+        radial-gradient(38rem 24rem at 85% 0%, rgba(56, 189, 248, 0.10), transparent 60%);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-base-100 text-base-content">
+
+  <!-- navbar -->
+  <div class="navbar mx-auto max-w-6xl px-4">
+    <div class="navbar-start">
+      <a href="#" class="flex items-center gap-2 font-semibold text-lg">
+        <img src="icon.png" alt="macclean icon" class="h-8 w-8 rounded-lg" />
+        macclean
+      </a>
+    </div>
+    <div class="navbar-end gap-2">
+      <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-sm">GitHub</a>
+      <a href="https://github.com/ranb27/macclean/releases" class="btn btn-ghost btn-sm">Releases</a>
+    </div>
+  </div>
+
+  <!-- hero -->
+  <div class="glow">
+    <div class="hero mx-auto max-w-6xl px-4 py-16 sm:py-24">
+      <div class="hero-content flex-col lg:flex-row-reverse gap-12 p-0">
+        <div class="max-w-xl">
+          <div class="badge badge-primary badge-outline mb-4">free · open source · macOS</div>
+          <h1 class="text-4xl sm:text-5xl font-bold leading-tight">
+            A disk cleaner that <span class="text-primary">can't hurt</span> your Mac.
+          </h1>
+          <p class="py-6 text-lg opacity-80">
+            macclean finds caches, logs, and data left behind by uninstalled
+            apps — then deletes through the Trash, so every cleanup is
+            undoable. Nothing is removed until you say so.
+          </p>
+          <div class="flex flex-wrap items-center gap-3">
+            <a href="https://github.com/ranb27/macclean/releases/latest/download/macclean-macos-arm64.dmg"
+               class="btn btn-primary btn-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg>
+              Download for macOS
+            </a>
+            <a href="https://github.com/ranb27/macclean" class="btn btn-ghost btn-lg">View on GitHub</a>
+          </div>
+          <p class="mt-4 text-sm opacity-60">Apple Silicon · macOS 11+ · MIT license</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- app preview (CSS mock of the real UI until a screenshot lands) -->
+  <div class="mx-auto max-w-5xl px-4 pb-4">
+    <div class="mockup-window border border-base-300 bg-base-200 shadow-2xl">
+      <div class="bg-base-100 px-4 py-5">
+        <!-- toolbar -->
+        <div class="flex items-center gap-3 border-b border-base-300 pb-3">
+          <span class="font-semibold">macclean</span>
+          <span class="btn btn-primary btn-xs pointer-events-none">Scan</span>
+          <span class="text-xs opacity-60">Found 82 targets — 16.4 GB potentially reclaimable</span>
+        </div>
+        <div class="flex">
+          <!-- sidebar -->
+          <div class="hidden sm:block w-52 shrink-0 border-r border-base-300 py-3 pr-3">
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide opacity-50">Categories</p>
+            <ul class="space-y-1 text-sm">
+              <li class="rounded px-2 py-1 opacity-80">Developer Caches <span class="float-right opacity-50">7.1 GB</span></li>
+              <li class="rounded px-2 py-1 opacity-80">App Caches <span class="float-right opacity-50">2.4 GB</span></li>
+              <li class="rounded px-2 py-1 opacity-80">App Leftovers <span class="float-right opacity-50">6.6 GB</span></li>
+              <li class="rounded px-2 py-1 opacity-80">Downloads <span class="float-right opacity-50">1.2 GB</span></li>
+              <li class="rounded px-2 py-1 opacity-80">Logs <span class="float-right opacity-50">214 MB</span></li>
+            </ul>
+          </div>
+          <!-- rows -->
+          <div class="min-w-0 flex-1 py-3 sm:pl-4">
+            <ul class="divide-y divide-base-300 text-sm">
+              <li class="flex items-center gap-3 py-2">
+                <input type="checkbox" checked class="checkbox checkbox-xs" tabindex="-1" />
+                <span class="w-16 shrink-0 font-mono text-xs">5.1 GB</span>
+                <span class="badge badge-warning badge-sm shrink-0">review</span>
+                <span class="truncate font-mono text-xs opacity-80">~/Library/Developer/CoreSimulator/Devices</span>
+              </li>
+              <li class="flex items-center gap-3 py-2">
+                <input type="checkbox" checked class="checkbox checkbox-xs checkbox-primary" tabindex="-1" />
+                <span class="w-16 shrink-0 font-mono text-xs">1.4 GB</span>
+                <span class="badge badge-success badge-sm shrink-0">safe</span>
+                <span class="truncate font-mono text-xs opacity-80">~/.cache/uv</span>
+              </li>
+              <li class="flex items-center gap-3 py-2">
+                <input type="checkbox" checked class="checkbox checkbox-xs checkbox-primary" tabindex="-1" />
+                <span class="w-16 shrink-0 font-mono text-xs">773 MB</span>
+                <span class="badge badge-success badge-sm shrink-0">safe</span>
+                <span class="truncate font-mono text-xs opacity-80">~/Library/Application Support/discord/Cache</span>
+              </li>
+              <li class="flex items-center gap-3 py-2">
+                <input type="checkbox" class="checkbox checkbox-xs" tabindex="-1" />
+                <span class="w-16 shrink-0 font-mono text-xs">394 MB</span>
+                <span class="badge badge-warning badge-sm shrink-0">review</span>
+                <span class="truncate font-mono text-xs opacity-80">~/Library/Application Support/dev.warp.Warp-Stable</span>
+              </li>
+              <li class="flex items-center gap-3 py-2">
+                <input type="checkbox" checked class="checkbox checkbox-xs checkbox-primary" tabindex="-1" />
+                <span class="w-16 shrink-0 font-mono text-xs">37 MB</span>
+                <span class="badge badge-success badge-sm shrink-0">safe</span>
+                <span class="truncate font-mono text-xs opacity-80">$ brew cleanup -s</span>
+              </li>
+              <li class="flex items-center gap-3 py-2">
+                <input type="checkbox" class="checkbox checkbox-xs" tabindex="-1" />
+                <span class="w-16 shrink-0 font-mono text-xs">86 MB</span>
+                <span class="badge badge-warning badge-sm shrink-0">review</span>
+                <span class="truncate font-mono text-xs opacity-80">~/Library/Group Containers/UBF8T346G9.Office</span>
+              </li>
+            </ul>
+            <div class="flex items-center justify-between pt-3">
+              <span class="text-xs opacity-50">review items stay unticked until you choose them</span>
+              <span class="btn btn-primary btn-sm pointer-events-none">Clean 41 items (9.8 GB)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- When a real screenshot exists, swap this block for an <img src="screenshot.png"> -->
+  </div>
+
+  <!-- features -->
+  <div class="mx-auto max-w-6xl px-4 py-16">
+    <div class="grid gap-6 md:grid-cols-3">
+      <div class="card bg-base-200 card-border">
+        <div class="card-body">
+          <h2 class="card-title text-primary">Safe by construction</h2>
+          <p class="opacity-80">
+            Only files your tools can fully regenerate are pre-selected —
+            package caches, build artifacts, logs. Anything ambiguous is
+            shown as <span class="badge badge-warning badge-sm">review</span>
+            and stays unticked.
+          </p>
+        </div>
+      </div>
+      <div class="card bg-base-200 card-border">
+        <div class="card-body">
+          <h2 class="card-title text-secondary">The Trash is the undo</h2>
+          <p class="opacity-80">
+            Every deletion goes through <code class="font-mono text-sm">NSFileManager</code> —
+            the same Trash Finder uses. Changed your mind? Select a file in
+            the Trash and choose <em>Put Back</em>. No <code class="font-mono text-sm">rm</code>, ever.
+          </p>
+        </div>
+      </div>
+      <div class="card bg-base-200 card-border">
+        <div class="card-body">
+          <h2 class="card-title text-accent">Finds what apps leave behind</h2>
+          <p class="opacity-80">
+            macclean reads the bundle ID of every installed app and flags
+            Library data that matches nothing — orphaned caches, containers,
+            preferences, and launch agents paid cleaners charge you for.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- what it scans -->
+  <div class="mx-auto max-w-6xl px-4 pb-16">
+    <h2 class="mb-6 text-3xl font-bold">What it scans</h2>
+    <div class="overflow-x-auto rounded-box border border-base-300">
+      <table class="table">
+        <thead class="bg-base-200">
+          <tr><th>Category</th><th>What's found</th><th>Safety</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="font-medium">Developer caches</td>
+            <td class="opacity-80">npm, bun, pnpm, yarn, uv, pip, Go modules, Cargo, Gradle, Maven, Deno, Xcode DerivedData</td>
+            <td><span class="badge badge-success badge-sm">safe</span></td>
+          </tr>
+          <tr>
+            <td class="font-medium">Developer data</td>
+            <td class="opacity-80">CoreSimulator devices, Xcode Archives, iOS DeviceSupport</td>
+            <td><span class="badge badge-warning badge-sm">review</span></td>
+          </tr>
+          <tr>
+            <td class="font-medium">Cleanup commands</td>
+            <td class="opacity-80"><code class="font-mono text-sm">brew cleanup -s</code>, <code class="font-mono text-sm">xcrun simctl delete unavailable</code> — the tool's own cleanup, never a file delete</td>
+            <td><span class="badge badge-success badge-sm">safe</span></td>
+          </tr>
+          <tr>
+            <td class="font-medium">App caches</td>
+            <td class="opacity-80">~/Library/Caches and cache subdirectories of installed apps</td>
+            <td><span class="badge badge-success badge-sm">safe</span></td>
+          </tr>
+          <tr>
+            <td class="font-medium">App leftovers</td>
+            <td class="opacity-80">Application Support, Containers, Group Containers, LaunchAgents, Preferences whose owning app is gone</td>
+            <td><span class="badge badge-warning badge-sm">review</span></td>
+          </tr>
+          <tr>
+            <td class="font-medium">Downloads</td>
+            <td class="opacity-80">.dmg / .pkg installers left in ~/Downloads</td>
+            <td><span class="badge badge-warning badge-sm">review</span></td>
+          </tr>
+          <tr>
+            <td class="font-medium">Logs</td>
+            <td class="opacity-80">~/Library/Logs and Homebrew service logs (truncated in place so daemons keep running)</td>
+            <td><span class="badge badge-success badge-sm">safe</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-3 text-sm opacity-60">
+      Never touched: documents, session data, cookies, IndexedDB, LocalStorage,
+      keychains, or anything under /System.
+    </p>
+  </div>
+
+  <!-- install -->
+  <div class="mx-auto max-w-6xl px-4 pb-16">
+    <h2 class="mb-6 text-3xl font-bold">Install in a minute</h2>
+    <div class="card bg-base-200 card-border">
+      <div class="card-body">
+        <ul class="steps steps-vertical sm:steps-horizontal w-full">
+          <li class="step step-primary">
+            <div class="mt-2 text-left">
+              <p class="font-medium">Download</p>
+              <p class="text-sm opacity-70">grab the .dmg above</p>
+            </div>
+          </li>
+          <li class="step step-primary">
+            <div class="mt-2 text-left">
+              <p class="font-medium">Drag</p>
+              <p class="text-sm opacity-70">macclean → Applications</p>
+            </div>
+          </li>
+          <li class="step">
+            <div class="mt-2 text-left">
+              <p class="font-medium">Open once</p>
+              <p class="text-sm opacity-70">see the note below</p>
+            </div>
+          </li>
+        </ul>
+        <div class="alert alert-soft mt-6">
+          <div>
+            <p class="font-medium">Unsigned build — one extra click on first launch.</p>
+            <p class="text-sm opacity-80">
+              macclean isn't notarized by Apple, so macOS blocks the first
+              double-click. Right-click the app → <kbd class="kbd kbd-sm">Open</kbd>
+              → confirm once; it launches normally forever after. Or from a
+              terminal:
+            </p>
+            <code class="mt-2 block rounded bg-base-300 px-3 py-2 font-mono text-sm">xattr -d com.apple.quarantine /Applications/macclean.app</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- bottom CTA -->
+  <div class="mx-auto max-w-6xl px-4 pb-20 text-center">
+    <h2 class="text-3xl font-bold">See what your Mac is carrying.</h2>
+    <p class="mx-auto mt-3 max-w-xl opacity-70">
+      Free, open source, and every deletion is recoverable from the Trash.
+    </p>
+    <a href="https://github.com/ranb27/macclean/releases/latest/download/macclean-macos-arm64.dmg"
+       class="btn btn-primary btn-lg mt-6">Download macclean</a>
+  </div>
+
+  <!-- footer -->
+  <footer class="footer footer-center border-t border-base-300 bg-base-200 p-8 text-sm opacity-80">
+    <div class="flex items-center gap-2">
+      <img src="icon.png" alt="" class="h-5 w-5 rounded" />
+      <span>macclean — MIT license</span>
+    </div>
+    <nav class="flex gap-4">
+      <a class="link link-hover" href="https://github.com/ranb27/macclean">GitHub</a>
+      <a class="link link-hover" href="https://github.com/ranb27/macclean/releases">Releases</a>
+      <a class="link link-hover" href="https://github.com/ranb27/macclean/issues">Issues</a>
+    </nav>
+  </footer>
+
+</body>
+</html>
