@@ -48,6 +48,8 @@ pub enum Category {
     Leftovers,
     Downloads,
     Logs,
+    /// Paths added by the user's config file (`[[custom]]` entries).
+    Custom,
 }
 
 impl Category {
@@ -58,15 +60,17 @@ impl Category {
             Self::Leftovers => "App Leftovers",
             Self::Downloads => "Downloads",
             Self::Logs => "Logs",
+            Self::Custom => "Custom",
         }
     }
 
-    pub const ALL: [Category; 5] = [
+    pub const ALL: [Category; 6] = [
         Self::DevCaches,
         Self::AppCaches,
         Self::Leftovers,
         Self::Downloads,
         Self::Logs,
+        Self::Custom,
     ];
 }
 

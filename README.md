@@ -69,6 +69,29 @@ cargo run --release
 
 Requires macOS + a Rust toolchain (`rustup` or `brew install rust`).
 
+## Config file
+
+Optional TOML at `~/Library/Application Support/macclean/config.toml`
+(`MACCLEAN_CONFIG` overrides the path). Add your own targets, or exclude
+anything you never want offered:
+
+```toml
+# never list these — a path or anything under it
+exclude = ["~/Library/Caches/Homebrew", "~/Downloads"]
+
+# extra targets to scan, on top of the built-in scanners
+[[custom]]
+path = "~/work/scratch"
+safety = "review"          # "safe" marks it regenerable; review is the default
+reason = "work scratch cache"
+```
+
+- Exclusions match the target's path (or any dir a cleanup command manages,
+  so `~/Library/Caches/Homebrew` also hides `brew cleanup -s`) and always
+  win over `[[custom]]` entries.
+- Custom paths show under a **Custom** category, always via Trash.
+- A config problem never aborts the scan — it shows up as a scan error.
+
 ## AI integration (MCP)
 
 `macclean --mcp` runs a Model Context Protocol server over stdio, so an AI
@@ -99,6 +122,25 @@ Tools: `disk_summary`, `scan_targets`, `clean_targets`. The clean tool is
 whitelist-by-construction — it re-scans and only acts on paths the scan
 currently reports as `safe` (regenerable). `review` targets and arbitrary
 paths are always skipped; nothing else can be deleted through MCP.
+
+## Menu bar & scheduled scans
+
+`macclean --tray` adds a menu-bar icon. Closing the window keeps macclean
+running in the tray — reopen it from the tray menu's **Show macclean**
+(or a left click on the icon), start a scan with **Scan now**, or exit
+for real with **Quit macclean**.
+
+The toolbar's **Schedule** button installs a LaunchAgent that runs
+`macclean --scheduled-scan` daily or weekly. A scheduled run is a
+report-only scan: it writes
+`~/Library/Application Support/macclean/last-scan.json`, posts a macOS
+notification, and never deletes anything — open the app to act on the
+findings. The same panel shows the last run's summary.
+
+```sh
+macclean --schedule daily    # or weekly; `off` removes the agent
+macclean --scheduled-scan    # what the LaunchAgent invokes
+```
 
 ## How it works
 
@@ -136,8 +178,8 @@ Notable implementation details:
 - [x] Simulator & Xcode device cleanup via `simctl`
 - [x] Homebrew cleanup integration
 - [x] `.app` bundle + `.dmg` distribution
-- [ ] Scheduled scan + menu-bar tray mode
-- [ ] Config file for custom paths / exclusions
+- [x] Scheduled scan + menu-bar tray mode
+- [x] Config file for custom paths / exclusions
 
 ## Contributing
 
