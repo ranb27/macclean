@@ -1,4 +1,5 @@
 use crate::config;
+use crate::ignore;
 use crate::model::{Action, Category, CleanTarget, CommandSpec, Safety};
 use rayon::prelude::*;
 use std::collections::HashSet;
@@ -173,7 +174,8 @@ pub fn scan_all() -> ScanResult {
     targets.extend(scan_downloads(&home, &installed));
 
     let (cfg, cfg_err) = config::load();
-    targets.retain(|t| !is_excluded(t, &home, &cfg));
+    let ignored = ignore::load();
+    targets.retain(|t| !is_excluded(t, &home, &cfg) && !is_ignored(t, &home, &ignored));
     append_custom(&cfg, &mut targets);
     if let Some(e) = cfg_err {
         errors.push(e);
@@ -196,6 +198,21 @@ fn is_excluded(t: &CleanTarget, home: &Path, cfg: &config::Config) -> bool {
             .data_dirs
             .iter()
             .any(|d| cfg.excludes(&resolve_dir(home, d)));
+    }
+    false
+}
+
+/// Same rule as `is_excluded`, applied to the UI-managed ignore list —
+/// clicking "ignore" on a row hides it exactly like `exclude` would.
+fn is_ignored(t: &CleanTarget, home: &Path, ignored: &HashSet<PathBuf>) -> bool {
+    if ignore::contains(ignored, &t.path) {
+        return true;
+    }
+    if let Action::Command(spec) = t.action {
+        return spec
+            .data_dirs
+            .iter()
+            .any(|d| ignore::contains(ignored, &resolve_dir(home, d)));
     }
     false
 }
@@ -257,7 +274,7 @@ fn scan_devtools(home: &Path) -> Vec<CleanTarget> {
 // ---------- command targets ----------
 
 /// Home-relative entries joined to home; absolute entries used as-is.
-fn resolve_dir(home: &Path, dir: &str) -> PathBuf {
+pub fn resolve_dir(home: &Path, dir: &str) -> PathBuf {
     if dir.starts_with('/') {
         PathBuf::from(dir)
     } else {

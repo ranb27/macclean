@@ -1,6 +1,7 @@
 mod app;
 mod config;
 mod connect;
+mod ignore;
 mod mcp;
 mod model;
 mod scan;

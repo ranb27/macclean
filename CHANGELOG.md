@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Ignore list — the × button on any target row hides it forever;
+  entries persist in `~/.config/macclean/ignore.json` and are filtered
+  inside `scan_all`, so hidden paths stay hidden in the GUI, `--dump`,
+  and MCP (`clean_targets` can never act on one). Ignoring a command
+  target hides its managed data dirs instead of the binary. The bottom
+  bar's "N ignored" button opens a review modal with per-path and
+  restore-all.
+
 - Config file at `~/Library/Application Support/macclean/config.toml`
   (`MACCLEAN_CONFIG` to override): `exclude` hides any target under the
   listed paths — including command targets whose managed dirs match —

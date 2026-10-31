@@ -92,6 +92,12 @@ reason = "work scratch cache"
 - Custom paths show under a **Custom** category, always via Trash.
 - A config problem never aborts the scan — it shows up as a scan error.
 
+There's also a lighter-weight way to hide things: click the **×** on any
+target row. The path lands in `~/.config/macclean/ignore.json` and is
+filtered at scan time — same "never offered" guarantee as `exclude`, no
+file editing, and a restore list under the bottom bar's *N ignored*
+button.
+
 ## AI integration (MCP)
 
 `macclean --mcp` runs a Model Context Protocol server over stdio, so an AI
@@ -178,8 +184,10 @@ Notable implementation details:
 - [x] Simulator & Xcode device cleanup via `simctl`
 - [x] Homebrew cleanup integration
 - [x] `.app` bundle + `.dmg` distribution
+- [x] MCP server mode + one-click **Connect AI** wiring
+- [x] Homebrew Cask distribution (`brew install --cask ranb27/tap/macclean`)
 - [x] Scheduled scan + menu-bar tray mode
-- [x] Config file for custom paths / exclusions
+- [x] Config file for custom paths / exclusions + one-click ignore list
 
 ## Contributing
 

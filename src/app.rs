@@ -1,4 +1,5 @@
 use crate::connect;
+use crate::ignore;
 use crate::model::{Action, Category, CleanTarget, Safety, fmt_size};
 use crate::scan::{self, ScanResult};
 use crate::schedule;
@@ -76,6 +77,22 @@ fn pal(ui: &egui::Ui) -> &'static Palette {
 
 fn bold() -> FontFamily {
     FontFamily::Name("inter-bold".into())
+}
+
+/// Dirs an "ignore" click should hide. For a command target that's its
+/// managed data dirs — hiding the binary path would do nothing, and hiding
+/// the data also stops the same bytes resurfacing via the file scanners.
+fn ignore_paths(t: &CleanTarget) -> Vec<PathBuf> {
+    match t.action {
+        Action::Command(spec) => {
+            let home = PathBuf::from(std::env::var("HOME").unwrap_or_default());
+            spec.data_dirs
+                .iter()
+                .map(|d| scan::resolve_dir(&home, d))
+                .collect()
+        }
+        _ => vec![t.path.clone()],
+    }
 }
 
 /// Brand tile color + embedded logo PNG for each client row.
@@ -287,6 +304,10 @@ pub struct MacCleanApp {
     quitting: bool,
     show_schedule: bool,
     schedule_status: Option<Result<String, String>>,
+    /// UI-managed ignore list (~/.config/macclean/ignore.json) — applied
+    /// at scan time, so ignored paths never re-enter `targets`.
+    ignored: HashSet<PathBuf>,
+    show_ignored: bool,
 }
 
 impl MacCleanApp {
@@ -313,6 +334,8 @@ impl MacCleanApp {
             quitting: false,
             show_schedule: false,
             schedule_status: None,
+            ignored: ignore::load(),
+            show_ignored: false,
         }
     }
 }
@@ -1038,6 +1061,144 @@ impl MacCleanApp {
         });
     }
 
+    /// "Ignored paths" modal — review what's hidden and restore entries.
+    /// Ignores apply at scan time, so a restored path reappears on the
+    /// next scan, not instantly.
+    fn ignored_window(&mut self, ctx: &egui::Context, p: &Palette) {
+        if !self.show_ignored {
+            return;
+        }
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.show_ignored = false;
+            return;
+        }
+        egui::Modal::new(egui::Id::unique("ignored")).show(ctx, |ui| {
+            ui.set_width(470.0);
+            ui.spacing_mut().item_spacing.y = 6.0;
+
+            // ---------- header ----------
+            ui.horizontal(|ui| {
+                let (tile, _) = ui.allocate_exact_size(vec2(38.0, 38.0), Sense::hover());
+                let pr = ui.painter();
+                pr.rect_filled(tile, 10.0, p.amber.gamma_multiply(0.16));
+                let c = tile.center();
+                // eye-slash glyph: ring + diagonal strike
+                pr.circle_stroke(c, 9.0, Stroke::new(1.8, p.amber));
+                pr.line_segment(
+                    [c + vec2(-11.0, 11.0), c + vec2(11.0, -11.0)],
+                    Stroke::new(1.8, p.amber),
+                );
+                ui.add_space(10.0);
+                ui.vertical(|ui| {
+                    ui.label(
+                        RichText::new("Ignored paths")
+                            .family(bold())
+                            .size(16.5)
+                            .color(p.text),
+                    );
+                    ui.label(
+                        RichText::new(
+                            "Hidden at every scan — restored paths reappear after the next scan.",
+                        )
+                        .size(11.5)
+                        .color(p.muted),
+                    );
+                });
+                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                    if ui
+                        .add(egui::Button::new(
+                            RichText::new("×").size(17.0).color(p.muted),
+                        ))
+                        .clicked()
+                    {
+                        self.show_ignored = false;
+                    }
+                });
+            });
+            ui.add_space(10.0);
+
+            // ---------- path rows ----------
+            let mut list: Vec<PathBuf> = self.ignored.iter().cloned().collect();
+            list.sort();
+            let mut restore: Vec<PathBuf> = Vec::new();
+            let mut restore_all = false;
+            egui::Frame::new()
+                .fill(p.card)
+                .stroke(Stroke::new(1.0, p.card_stroke))
+                .corner_radius(CornerRadius::same(12))
+                .inner_margin(Margin::symmetric(12, 6))
+                .show(ui, |ui| {
+                    if list.is_empty() {
+                        ui.label(RichText::new("Nothing ignored.").size(12.0).color(p.muted));
+                        return;
+                    }
+                    egui::ScrollArea::vertical()
+                        .max_height(240.0)
+                        .show(ui, |ui| {
+                            for path in &list {
+                                ui.horizontal(|ui| {
+                                    let s = path.display().to_string();
+                                    ui.add(
+                                        egui::Label::new(
+                                            RichText::new(&s).monospace().size(11.0).color(p.text),
+                                        )
+                                        .truncate(),
+                                    )
+                                    .on_hover_text(s);
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        if ui
+                                            .add(egui::Button::new(
+                                                RichText::new("restore").size(10.5).color(p.green),
+                                            ))
+                                            .clicked()
+                                        {
+                                            restore.push(path.clone());
+                                        }
+                                    });
+                                });
+                                ui.add_space(4.0);
+                            }
+                        });
+                });
+            ui.add_space(10.0);
+
+            // ---------- footer ----------
+            ui.horizontal(|ui| {
+                ui.label(
+                    RichText::new(format!("{} path(s) hidden", list.len()))
+                        .size(11.0)
+                        .color(p.muted),
+                );
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui
+                        .add_enabled(
+                            !list.is_empty(),
+                            egui::Button::new(
+                                RichText::new("Restore all").size(11.5).color(p.green),
+                            )
+                            .stroke(Stroke::new(1.0, p.green)),
+                        )
+                        .clicked()
+                    {
+                        restore_all = true;
+                    }
+                });
+            });
+
+            let changed = restore_all || !restore.is_empty();
+            if restore_all {
+                self.ignored.clear();
+            } else {
+                for path in restore {
+                    self.ignored.remove(&path);
+                }
+            }
+            if changed && let Err(e) = ignore::save(&self.ignored) {
+                self.errors.push(e);
+            }
+        });
+    }
+
     /// Tray lifecycle: install once (main thread), poll menu events,
     /// intercept close-to-tray. Menu clicks don't wake winit, so while a
     /// tray exists we repaint on a heartbeat.
@@ -1238,6 +1399,23 @@ impl eframe::App for MacCleanApp {
                         ui.colored_label(p.red, format!("{} error(s)", self.errors.len()))
                             .on_hover_text(self.errors.join("\n"));
                     }
+                    if !self.ignored.is_empty() {
+                        ui.add_space(8.0);
+                        if ui
+                            .add(
+                                egui::Button::new(
+                                    RichText::new(format!("{} ignored", self.ignored.len()))
+                                        .size(11.5)
+                                        .color(p.muted),
+                                )
+                                .fill(p.card),
+                            )
+                            .on_hover_text("Hidden paths — click to review or restore")
+                            .clicked()
+                        {
+                            self.show_ignored = true;
+                        }
+                    }
 
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         let btn = ui.add_enabled(
@@ -1392,9 +1570,10 @@ impl eframe::App for MacCleanApp {
                 });
             });
 
-        // ---------- connect-AI + schedule windows ----------
+        // ---------- connect-AI + schedule + ignored windows ----------
         self.connect_window(ui.ctx(), p);
         self.schedule_window(ui.ctx(), p);
+        self.ignored_window(ui.ctx(), p);
 
         // ---------- central target list ----------
         egui::CentralPanel::default()
@@ -1459,6 +1638,8 @@ impl eframe::App for MacCleanApp {
                     .unwrap_or(1)
                     .max(1);
                 let targets = &mut self.targets;
+                let mut to_ignore: Vec<PathBuf> = Vec::new();
+                let mut to_remove: HashSet<PathBuf> = HashSet::new();
 
                 egui::Frame::default()
                     .fill(p.card)
@@ -1480,8 +1661,9 @@ impl eframe::App for MacCleanApp {
                             .column(Column::exact(64.0))
                             .column(Column::remainder().clip(true).at_least(140.0))
                             .column(Column::remainder().clip(true).at_least(140.0))
+                            .column(Column::exact(26.0))
                             .header(24.0, |mut header| {
-                                for title in ["", "SIZE", "SAFETY", "PATH", "REASON"] {
+                                for title in ["", "SIZE", "SAFETY", "PATH", "REASON", ""] {
                                     header.col(|ui| {
                                         ui.label(
                                             RichText::new(title).size(10.0).color(p.muted).strong(),
@@ -1540,9 +1722,35 @@ impl eframe::App for MacCleanApp {
                                         )
                                         .on_hover_text(&t.reason);
                                     });
+                                    row.col(|ui| {
+                                        if ui
+                                            .add(
+                                                egui::Label::new(
+                                                    RichText::new("×").size(13.0).color(p.muted),
+                                                )
+                                                .sense(Sense::click()),
+                                            )
+                                            .on_hover_cursor(egui::CursorIcon::PointingHand)
+                                            .on_hover_text("Never offer this path again")
+                                            .clicked()
+                                        {
+                                            to_ignore.extend(ignore_paths(t));
+                                            to_remove.insert(t.path.clone());
+                                        }
+                                    });
                                 });
                             });
                     });
+
+                if !to_remove.is_empty() {
+                    let n = to_remove.len();
+                    self.targets.retain(|t| !to_remove.contains(&t.path));
+                    self.ignored.extend(to_ignore);
+                    self.status = format!("{n} item(s) hidden — manage via the ignored list below");
+                    if let Err(e) = ignore::save(&self.ignored) {
+                        self.errors.push(e);
+                    }
+                }
             });
     }
 }
