@@ -277,6 +277,45 @@
             </p>
           </div>
         </div>
+        <div class="card glass" data-reveal style="--reveal-delay:360ms">
+          <div class="card-body">
+            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M9 13v2"/><path d="M15 13v2"/></svg>
+            </div>
+            <h2 class="card-title" data-i18n="feat.ai.title">Talks to your AI</h2>
+            <p class="opacity-80" data-i18n="feat.ai.body">
+              <code>macclean --mcp</code> is a real MCP server — let Claude, Codex
+              or Gemini scan and clean for you. One click in Connect AI wires it
+              up, and the AI can only ever touch safe targets.
+            </p>
+          </div>
+        </div>
+        <div class="card glass" data-reveal style="--reveal-delay:480ms">
+          <div class="card-body">
+            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/15 text-secondary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <h2 class="card-title" data-i18n="feat.sched.title">Scans itself</h2>
+            <p class="opacity-80" data-i18n="feat.sched.body">
+              Install a daily or weekly LaunchAgent from the toolbar — it reports
+              reclaimable space with a notification and never deletes. A menu-bar
+              mode keeps macclean resident.
+            </p>
+          </div>
+        </div>
+        <div class="card glass" data-reveal style="--reveal-delay:600ms">
+          <div class="card-body">
+            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 text-accent">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="16" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="18" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+            </div>
+            <h2 class="card-title" data-i18n="feat.tune.title">Tunes to you</h2>
+            <p class="opacity-80" data-i18n="feat.tune.body">
+              <code>config.toml</code> adds your own scan paths or permanent
+              excludes, and the × on any row one-click-hides it forever through
+              the ignore list.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -469,6 +508,12 @@
         "feat.trash.body": 'Every deletion goes through <code>NSFileManager</code> — the same mechanism Finder uses. Changed your mind? Open Trash and <kbd class="kbd kbd-sm">Put Back</kbd>. Live logs are truncated in place, not moved.',
         "feat.orphan.title": "Finds what apps forgot",
         "feat.orphan.body": "Orphaned LaunchAgents, preference files, and leftover directories from apps you deleted months ago — matched against what's still installed, so nothing you use gets flagged.",
+        "feat.ai.title": "Talks to your AI",
+        "feat.ai.body": "`macclean --mcp` is a real MCP server — let Claude, Codex or Gemini scan and clean for you. One click in Connect AI wires it up, and the AI can only ever touch safe targets.",
+        "feat.sched.title": "Scans itself",
+        "feat.sched.body": "Install a daily or weekly LaunchAgent from the toolbar — it reports reclaimable space with a notification and never deletes. A menu-bar mode keeps macclean resident.",
+        "feat.tune.title": "Tunes to you",
+        "feat.tune.body": "`config.toml` adds your own scan paths or permanent excludes, and the × on any row one-click-hides it forever through the ignore list.",
         "scan.heading": "What it scans",
         "tbl.cat": "Category",
         "tbl.ex": "Examples",
@@ -515,6 +560,12 @@
         "feat.trash.body": 'ทุกการลบผ่าน <code>NSFileManager</code> — กลไกเดียวกับ Finder เปลี่ยนใจ? เปิด Trash แล้วเลือก <kbd class="kbd kbd-sm">Put Back</kbd> ล็อกที่กำลังใช้งานจะถูกตัดให้ว่างแทนที่จะย้าย',
         "feat.orphan.title": "ค้นหาสิ่งที่แอปลืมไว้",
         "feat.orphan.body": "LaunchAgents ที่เหลือค้าง ไฟล์ preference และโฟลเดอร์หลงเหลือจากแอปที่ลบไปหลายเดือนแล้ว — เทียบกับแอปที่ยังติดตั้งอยู่ แอปที่คุณใช้จะไม่ถูกแจ้งเตือน",
+        "feat.ai.title": "คุยกับ AI ของคุณได้",
+        "feat.ai.body": "`macclean --mcp` เป็น MCP server ตัวจริง — ให้ Claude, Codex หรือ Gemini ช่วยสแกนและล้างได้ กด Connect AI ครั้งเดียวก็เชื่อม และ AI แตะได้เฉพาะไฟล์ระดับ safe เท่านั้น",
+        "feat.sched.title": "สแกนเองตามกำหนด",
+        "feat.sched.body": "ติดตั้ง LaunchAgent รายวัน/รายสัปดาห์จาก toolbar — รายงานพื้นที่คืนได้พร้อม notification โดยไม่ลบอะไรเอง มีโหมด menu-bar ให้อยู่ประจำได้",
+        "feat.tune.title": "ปรับให้เข้ากับคุณ",
+        "feat.tune.body": "`config.toml` เพิ่ม path เองหรือ exclude ถาวร และปุ่ม × บนแต่ละแถวซ่อนมันถาวรผ่าน ignore list",
         "scan.heading": "สแกนอะไรบ้าง",
         "tbl.cat": "หมวดหมู่",
         "tbl.ex": "ตัวอย่าง",
@@ -561,6 +612,12 @@
         "feat.trash.body": '所有删除都通过 <code>NSFileManager</code>——与 Finder 相同的机制。改变主意了？打开废纸篓选择 <kbd class="kbd kbd-sm">放回原处</kbd>。正在写入的日志会被就地清空，而不是移动。',
         "feat.orphan.title": "找出应用遗忘的数据",
         "feat.orphan.body": "残留的 LaunchAgents、偏好设置文件，以及数月前删除的应用留下的目录——会与仍安装的应用逐一比对，你正在使用的内容不会被标记。",
+        "feat.ai.title": "连接你的 AI",
+        "feat.ai.body": "`macclean --mcp` 是真正的 MCP 服务器——让 Claude、Codex 或 Gemini 帮你扫描清理。Connect AI 一键接入，AI 永远只能处理 safe 级目标。",
+        "feat.sched.title": "定时自动扫描",
+        "feat.sched.body": "从工具栏安装每日或每周 LaunchAgent——报告可回收空间并推送通知，绝不自动删除。菜单栏模式可常驻运行。",
+        "feat.tune.title": "随你自定义",
+        "feat.tune.body": "`config.toml` 可添加自定义路径或永久排除项，任意行上的 × 通过忽略列表一键永久隐藏。",
         "scan.heading": "扫描内容",
         "tbl.cat": "类别",
         "tbl.ex": "示例",
@@ -607,6 +664,12 @@
         "feat.trash.body": 'すべての削除は <code>NSFileManager</code> 経由 — Finder と同じ仕組みです。やっぱり戻したい？ゴミ箱を開いて <kbd class="kbd kbd-sm">戻す</kbd>。使用中のログは移動せずその場で切り詰めます。',
         "feat.orphan.title": "アプリが忘れたものを発見",
         "feat.orphan.body": "残った LaunchAgents、設定ファイル、数ヶ月前に削除したアプリの残存ディレクトリ — インストール済みアプリと照合するので、使用中のものは検出されません。",
+        "feat.ai.title": "AI と連携",
+        "feat.ai.body": "`macclean --mcp` は本物の MCP サーバー。Claude・Codex・Gemini にスキャンとクリーンを任せられます。Connect AI でワンクリック接続。AI が触れられるのは safe な項目だけです。",
+        "feat.sched.title": "自動スキャン",
+        "feat.sched.body": "ツールバーから毎日/毎週の LaunchAgent をインストール。回収可能な容量を通知するだけで削除はしません。メニューバー常駐モードもあります。",
+        "feat.tune.title": "あなた仕様に",
+        "feat.tune.body": "`config.toml` で独自パスの追加や恒久除外が可能。各行の × を押せば ignore list で永久に非表示。",
         "scan.heading": "スキャン対象",
         "tbl.cat": "カテゴリ",
         "tbl.ex": "例",
