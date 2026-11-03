@@ -143,6 +143,13 @@ report-only scan: it writes
 notification, and never deletes anything — open the app to act on the
 findings. The same panel shows the last run's summary.
 
+The command exits with an error if `HOME` is invalid or the report cannot
+be written. Notification launch failures are logged as warnings and do not
+invalidate a saved report. A successful `osascript` call does not guarantee
+that macOS actually displayed the notification; check notification settings
+if it does not appear. LaunchAgent output goes to
+`~/Library/Logs/macclean-scheduled.log`.
+
 ```sh
 macclean --schedule daily    # or weekly; `off` removes the agent
 macclean --scheduled-scan    # what the LaunchAgent invokes

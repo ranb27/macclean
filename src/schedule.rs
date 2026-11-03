@@ -4,7 +4,7 @@
 //! consistent with dry-run-by-design.
 
 use serde_json::json;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// How often the LaunchAgent fires.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -153,6 +153,18 @@ fn dict_plist(exe: &str, interval: u64, log: &str) -> String {
 /// `macclean --scheduled-scan` — headless scan, record the summary,
 /// notify. Deletion stays a manual choice made in the app.
 pub fn run_scheduled() -> Result<String, String> {
+    let home = std::env::var_os("HOME")
+        .filter(|home| !home.is_empty())
+        .map(PathBuf::from)
+        .ok_or("HOME is not set or is empty")?;
+    if !home.is_absolute() || !home.is_dir() {
+        return Err(format!(
+            "HOME is not an existing absolute directory: {}",
+            home.display()
+        ));
+    }
+    let report = home.join("Library/Application Support/macclean/last-scan.json");
+
     let r = crate::scan::scan_all();
     let total: u64 = r.targets.iter().map(|t| t.size).sum();
     let summary = format!(
@@ -161,9 +173,9 @@ pub fn run_scheduled() -> Result<String, String> {
         crate::model::fmt_size(total)
     );
 
-    if let Some(parent) = last_scan_path().parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
+    let parent = report.parent().expect("report path has a parent");
+    std::fs::create_dir_all(parent)
+        .map_err(|e| format!("cannot create report directory {}: {e}", parent.display()))?;
     let at = {
         let secs = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -178,25 +190,64 @@ pub fn run_scheduled() -> Result<String, String> {
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| format!("epoch {secs}"))
     };
-    let _ = std::fs::write(
-        last_scan_path(),
+    std::fs::write(
+        &report,
         format!(
             "{}\n",
             json!({"at": at, "targets": r.targets.len(),
                    "reclaimable": crate::model::fmt_size(total),
                    "reclaimable_bytes": total})
         ),
-    );
+    )
+    .map_err(|e| format!("cannot write report {}: {e}", report.display()))?;
 
-    // Notification via osascript — ships with macOS, no dependency.
-    let _ = std::process::Command::new("/usr/bin/osascript")
+    if let Err(e) = notify(Path::new("/usr/bin/osascript"), &summary) {
+        eprintln!("scheduled scan: notification failed: {e}");
+    }
+
+    Ok(summary)
+}
+
+fn notify(osascript: &Path, summary: &str) -> Result<(), String> {
+    let output = std::process::Command::new(osascript)
         .args([
             "-e",
             &format!(
                 "display notification \"{summary}\" with title \"macclean\" subtitle \"Scheduled scan\""
             ),
         ])
-        .output();
+        .output()
+        .map_err(|e| format!("cannot run {}: {e}", osascript.display()))?;
 
-    Ok(summary)
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let detail = stderr.trim();
+        if detail.is_empty() {
+            Err(format!("osascript exited with {}", output.status))
+        } else {
+            Err(format!("osascript exited with {}: {detail}", output.status))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn notification_checks_process_result() {
+        assert!(notify(Path::new("/usr/bin/true"), "test").is_ok());
+        assert!(
+            notify(Path::new("/usr/bin/false"), "test")
+                .unwrap_err()
+                .contains("osascript exited")
+        );
+        assert!(
+            notify(Path::new("/dev/null/osascript"), "test")
+                .unwrap_err()
+                .contains("cannot run")
+        );
+    }
 }

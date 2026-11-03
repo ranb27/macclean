@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-03
+
+### Fixed
+
+- `--scheduled-scan` no longer reports success when it cannot write
+  `last-scan.json` — invalid `HOME` values and filesystem errors now
+  reach the exit-1 path used by the LaunchAgent. Notification process
+  failures are logged as warnings without invalidating a saved report.
+
 ## [0.4.0] - 2026-10-31
 
 ### Added
